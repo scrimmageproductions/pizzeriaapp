@@ -6,11 +6,13 @@ import AdminApp from "./components/admin/AdminApp";
 import PosPage from "./components/admin/PosPage";
 import PublicStorefront from "./components/storefront/PublicStorefront";
 import PayOrderPage from "./components/payment/PayOrderPage";
+import AgentEventHost from "./components/shared/AgentEventHost";
 
 function App() {
   return (
     <ShopProvider>
       <BrowserRouter>
+        <AgentEventHost />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/onboarding" element={<OnboardingWizard />} />

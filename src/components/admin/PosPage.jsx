@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bike, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Bike, Camera, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound, X } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
 import PosPaymentModal from "./PosPaymentModal";
+import PaperTicketModal from "./PaperTicketModal";
 
 const TAX_RATE = 0.08;
 
@@ -30,10 +31,13 @@ export default function PosPage() {
   const [fulfillment, setFulfillment] = useState("pickup");
   const [address, setAddress] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paperTicket, setPaperTicket] = useState(null); // { imageUrl, total } | null
+  const [scanOpen, setScanOpen] = useState(false);
 
   if (!shop) return <Navigate to="/onboarding" replace />;
 
   const addToTicket = (item) => {
+    if (paperTicket) return; // photographed ticket already carries its own total — no digital items to add
     setTicket((prev) => {
       const existing = prev.find((t) => t.id === item.id);
       if (existing) return prev.map((t) => (t.id === item.id ? { ...t, qty: t.qty + 1 } : t));
@@ -44,12 +48,12 @@ export default function PosPage() {
     setTicket((prev) => (qty <= 0 ? prev.filter((t) => t.id !== id) : prev.map((t) => (t.id === id ? { ...t, qty } : t))));
 
   const subtotal = ticket.reduce((sum, t) => sum + t.price * t.qty, 0);
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  const tax = paperTicket ? 0 : subtotal * TAX_RATE;
+  const total = paperTicket ? paperTicket.total : subtotal + tax;
 
   const isPhoneValid = orderType === "walkin" || (customerName.trim() && customerPhone.trim());
   const isDeliveryValid = orderType === "walkin" || fulfillment === "pickup" || address.trim();
-  const canCharge = ticket.length > 0 && isPhoneValid && isDeliveryValid;
+  const canCharge = (ticket.length > 0 || !!paperTicket) && isPhoneValid && isDeliveryValid;
 
   const resetTicket = () => {
     setTicket([]);
@@ -59,6 +63,7 @@ export default function PosPage() {
     setFulfillment("pickup");
     setAddress("");
     setPaymentOpen(false);
+    setPaperTicket(null);
   };
 
   const buildOrder = (paymentMethod, paid) => {
@@ -71,12 +76,13 @@ export default function PosPage() {
       customerPhone: orderType === "phone" ? customerPhone.trim() : "",
       fulfillment: orderFulfillment,
       address: orderFulfillment === "delivery" ? address.trim() : null,
-      items: ticket.map((t) => ({ itemId: t.id, name: t.name, qty: t.qty, price: t.price })),
+      items: paperTicket ? [] : ticket.map((t) => ({ itemId: t.id, name: t.name, qty: t.qty, price: t.price })),
+      ticketImageUrl: paperTicket?.imageUrl || null,
       total,
       createdAt: Date.now(),
       prepMinutes: shop.prepMinutes,
       completedAt: null,
-      source: "pos",
+      source: paperTicket ? "pos-paper" : "pos",
       paymentMethod,
       paidAt: paid ? Date.now() : null,
       assignedDriver: null,
@@ -102,6 +108,16 @@ export default function PosPage() {
     const order = buildOrder("qr", false);
     commitOrder(order);
     return order;
+  };
+
+  const handleCardCharge = (paymentMethod) => {
+    commitOrder(buildOrder(paymentMethod, true));
+  };
+
+  const handlePaperTicket = (imageUrl, ticketTotal) => {
+    setTicket([]);
+    setPaperTicket({ imageUrl, total: ticketTotal });
+    setScanOpen(false);
   };
 
   const categoryItems = items.filter((i) => i.category === activeCategory);
@@ -169,6 +185,14 @@ export default function PosPage() {
         {/* Ticket — 30% */}
         <div className="flex w-[30%] flex-col border-l border-gray-200 bg-white">
           <div className="space-y-3 border-b border-gray-100 p-4">
+            <button
+              onClick={() => setScanOpen(true)}
+              disabled={ticket.length > 0}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-3 text-sm font-bold text-gray-600 transition hover:border-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Camera size={16} /> Snap Paper Ticket
+            </button>
+
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setOrderType("walkin")}
@@ -218,7 +242,22 @@ export default function PosPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {ticket.length === 0 ? (
+            {paperTicket ? (
+              <div className="space-y-3">
+                <div className="relative overflow-hidden rounded-2xl border border-gray-200">
+                  <img src={paperTicket.imageUrl} alt="Handwritten ticket" className="max-h-64 w-full object-cover" />
+                  <button
+                    onClick={() => setPaperTicket(null)}
+                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                  <Camera size={13} /> Handwritten paper ticket — total entered manually
+                </p>
+              </div>
+            ) : ticket.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-300">
                 <ShoppingBag size={32} />
                 <p className="text-sm">Tap items to start a ticket</p>
@@ -254,14 +293,18 @@ export default function PosPage() {
           </div>
 
           <div className="space-y-2 border-t border-gray-100 p-4">
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Tax (8%)</span>
-              <span>{formatCurrency(tax)}</span>
-            </div>
+            {!paperTicket && (
+              <>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>Tax (8%)</span>
+                  <span>{formatCurrency(tax)}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-lg font-extrabold text-gray-900">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
@@ -274,10 +317,10 @@ export default function PosPage() {
             >
               Charge {formatCurrency(total)}
             </button>
-            {ticket.length > 0 && !isPhoneValid && (
+            {(ticket.length > 0 || paperTicket) && !isPhoneValid && (
               <p className="text-center text-xs font-semibold text-red-500">Enter name & phone for a phone order</p>
             )}
-            {ticket.length > 0 && isPhoneValid && !isDeliveryValid && (
+            {(ticket.length > 0 || paperTicket) && isPhoneValid && !isDeliveryValid && (
               <p className="text-center text-xs font-semibold text-red-500">Enter a delivery address</p>
             )}
           </div>
@@ -292,9 +335,12 @@ export default function PosPage() {
         orders={orders}
         onCashCharge={handleCashCharge}
         onQrCharge={handleQrCharge}
+        onCardCharge={handleCardCharge}
         onConfirmPaid={markOrderPaid}
         onFinish={resetTicket}
       />
+
+      <PaperTicketModal open={scanOpen} onClose={() => setScanOpen(false)} onCreate={handlePaperTicket} primaryColor={shop.primaryColor} />
     </div>
   );
 }

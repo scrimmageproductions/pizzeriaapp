@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, Bike, LayoutGrid, Megaphone, Menu, Palette, Pizza, Store, Tablet, Users, X } from "lucide-react";
+import { Ban, Bike, LayoutGrid, Megaphone, Menu, Package, Palette, Pizza, Printer, Store, Tablet, Users, X } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
@@ -8,9 +8,11 @@ const NAV_ITEMS = [
   { to: "/admin/kds", label: "Live Order KDS", icon: LayoutGrid },
   { to: "/admin/pos", label: "Tablet POS", icon: Tablet },
   { to: "/admin/delivery", label: "Delivery Dispatch", icon: Bike },
+  { to: "/admin/inventory", label: "📦 AI Inventory", icon: Package },
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
+  { to: "/admin/printers", label: "🖨️ Hardware & Printers", icon: Printer },
 ];
 
 export default function AdminLayout({ children }) {

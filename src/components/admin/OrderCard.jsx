@@ -1,4 +1,4 @@
-import { Bike, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
+import { Bike, Camera, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
 import { useShopActions } from "../../context/ShopContext";
 import Button from "../shared/Button";
 import ProgressRing from "../shared/ProgressRing";
@@ -35,16 +35,26 @@ export default function OrderCard({ order, now, accentColor }) {
           </span>
         )}
         <div className="min-w-0 flex-1 space-y-1">
-          {order.items.map((it) => (
-            <div key={it.itemId} className="flex justify-between text-xs text-gray-600">
-              <span className="truncate">
-                {it.qty}× {it.name}
-              </span>
-              <span className="shrink-0 font-medium text-gray-800">{formatCurrency(it.qty * it.price)}</span>
-            </div>
-          ))}
+          {order.ticketImageUrl ? (
+            <p className="flex items-center gap-1 text-xs font-semibold text-gray-500">
+              <Camera size={12} /> Handwritten paper ticket
+            </p>
+          ) : (
+            order.items.map((it) => (
+              <div key={it.itemId} className="flex justify-between text-xs text-gray-600">
+                <span className="truncate">
+                  {it.qty}× {it.name}
+                </span>
+                <span className="shrink-0 font-medium text-gray-800">{formatCurrency(it.qty * it.price)}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
+
+      {order.ticketImageUrl && (
+        <img src={order.ticketImageUrl} alt="Handwritten ticket" className="mt-3 max-h-56 w-full rounded-xl border border-gray-100 object-cover" />
+      )}
 
       {order.address && (
         <p className="mt-3 flex items-center gap-1 text-xs text-gray-500">

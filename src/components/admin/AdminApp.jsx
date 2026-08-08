@@ -7,6 +7,8 @@ import MenuBrandManagerPage from "./MenuBrandManagerPage";
 import CrmPage from "./CrmPage";
 import MarketingPage from "./MarketingPage";
 import DeliveryDispatchPage from "./DeliveryDispatchPage";
+import InventoryPage from "./InventoryPage";
+import PrinterSettingsPage from "./PrinterSettingsPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -20,9 +22,11 @@ export default function AdminApp() {
         <Route index element={<OverviewPage />} />
         <Route path="kds" element={<OrderKDSPage />} />
         <Route path="delivery" element={<DeliveryDispatchPage />} />
+        <Route path="inventory" element={<InventoryPage />} />
         <Route path="menu" element={<MenuBrandManagerPage />} />
         <Route path="crm" element={<CrmPage />} />
         <Route path="marketing" element={<MarketingPage />} />
+        <Route path="printers" element={<PrinterSettingsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

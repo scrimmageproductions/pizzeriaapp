@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
-import { uid } from "../utils/helpers";
+import { getOrderTiming, uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedOrders } from "../data/mockCrm";
+import { buildAgentLogEntry, computeDeductions, INGREDIENT_SEED, SUPPLIER_SEED } from "../data/inventory";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -11,6 +12,10 @@ const DEFAULT_STATE = {
   items: [],
   orders: [],
   customers: [],
+  ingredients: INGREDIENT_SEED,
+  suppliers: SUPPLIER_SEED,
+  agentActivityLog: [],
+  printEvents: [],
 };
 
 function init() {
@@ -33,6 +38,7 @@ function reducer(state, action) {
         mockSalesBaseline: 3000, // seeds "Commission Saved" so the moat is visible on day one
         winBackSmsEnabled: true,
         abandonedCartSmsEnabled: false,
+        printer: { connected: false, deviceName: null, autoPrintOnReady: false },
         lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
         lng: -73.9442,
         createdAt: Date.now(),
@@ -80,6 +86,53 @@ function reducer(state, action) {
         ),
       };
 
+    case "ADD_SUPPLIER":
+      return { ...state, suppliers: [...state.suppliers, { id: uid("supplier"), ...action.payload }] };
+
+    case "UPDATE_INGREDIENT":
+      return {
+        ...state,
+        ingredients: state.ingredients.map((i) => (i.id === action.payload.id ? { ...i, ...action.payload.changes } : i)),
+      };
+
+    case "PROCESS_ORDER_INVENTORY": {
+      const order = state.orders.find((o) => o.id === action.payload.orderId);
+      if (!order || order.inventoryProcessed) return state;
+
+      const deductions = computeDeductions(order.items);
+      const newLogEntries = [];
+      const ingredients = state.ingredients.map((ing) => {
+        const deducted = deductions[ing.id] ? Math.max(0, +(ing.stock - deductions[ing.id]).toFixed(2)) : ing.stock;
+        const restocked = ing;
+        if (deducted < ing.threshold && ing.autoPurchaseEnabled) {
+          const supplier = state.suppliers.find((s) => s.id === ing.preferredSupplierId);
+          const supplierItem = supplier?.items.find((it) => it.ingredientId === ing.id);
+          const cost = +(ing.restockAmount * (supplierItem?.costPerUnit || 0)).toFixed(2);
+          newLogEntries.push(buildAgentLogEntry({ ingredient: restocked, supplierName: supplier?.name || "Preferred Supplier", cost }));
+          return { ...ing, stock: +(deducted + ing.restockAmount).toFixed(2) };
+        }
+        return { ...ing, stock: deducted };
+      });
+
+      return {
+        ...state,
+        ingredients,
+        agentActivityLog: [...newLogEntries, ...state.agentActivityLog].slice(0, 50),
+        orders: state.orders.map((o) => (o.id === order.id ? { ...o, inventoryProcessed: true } : o)),
+      };
+    }
+
+    case "ADD_PRINT_EVENT": {
+      const entry = { id: uid("print"), ts: Date.now(), message: action.payload.message, orderId: action.payload.orderId || null };
+      return {
+        ...state,
+        printEvents: [entry, ...state.printEvents].slice(0, 50),
+        orders: action.payload.orderId
+          ? state.orders.map((o) => (o.id === action.payload.orderId ? { ...o, autoPrinted: true } : o))
+          : state.orders,
+      };
+    }
+
     case "UPSERT_CUSTOMER": {
       const { name, email, phone, orderTotal } = action.payload;
       const emailKey = email?.trim().toLowerCase();
@@ -123,6 +176,31 @@ export function ShopProvider({ children }) {
     saveState(state);
   }, [state]);
 
+  // The AI Inventory agent: whenever an order gets marked "Completed" (from the KDS or Delivery
+  // Dispatch), deduct its ingredients and auto-reorder anything that drops below threshold.
+  useEffect(() => {
+    const pending = state.orders.filter((o) => o.completedAt && !o.inventoryProcessed);
+    pending.forEach((o) => dispatch({ type: "PROCESS_ORDER_INVENTORY", payload: { orderId: o.id } }));
+  }, [state.orders]);
+
+  // Auto-print: once a connected printer has auto-print-on-ready enabled, "print" a receipt the
+  // moment an order's timer flips to Ready — polls since "Ready" is a derived, time-based state.
+  useEffect(() => {
+    const printer = state.shop?.printer;
+    if (!printer?.connected || !printer?.autoPrintOnReady) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      const justReady = state.orders.filter((o) => !o.completedAt && !o.autoPrinted && getOrderTiming(o, now).stageIndex === 2);
+      justReady.forEach((o) =>
+        dispatch({
+          type: "ADD_PRINT_EVENT",
+          payload: { message: `🖨️ Printing receipt for Order #${o.id.replace("DD-", "")}...`, orderId: o.id },
+        })
+      );
+    }, 2000);
+    return () => clearInterval(id);
+  }, [state.orders, state.shop?.printer]);
+
   // Cross-tab sync: e.g. a customer completing a QR payment in one tab (opened from the POS
   // screen's payment QR code) should be reflected immediately back on the POS tab.
   useEffect(() => {
@@ -151,6 +229,10 @@ export function ShopProvider({ children }) {
       assignDriver: (id, driver) => dispatch({ type: "ASSIGN_DRIVER", payload: { id, driver } }),
 
       upsertCustomer: (payload) => dispatch({ type: "UPSERT_CUSTOMER", payload }),
+
+      addSupplier: (payload) => dispatch({ type: "ADD_SUPPLIER", payload }),
+      updateIngredient: (id, changes) => dispatch({ type: "UPDATE_INGREDIENT", payload: { id, changes } }),
+      addPrintEvent: (message, orderId = null) => dispatch({ type: "ADD_PRINT_EVENT", payload: { message, orderId } }),
     }),
     []
   );

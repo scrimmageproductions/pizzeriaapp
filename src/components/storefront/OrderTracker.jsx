@@ -1,8 +1,10 @@
-import { ClipboardCheck, Flame, Bike, ShoppingBag, PartyPopper, ArrowLeft, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ClipboardCheck, Flame, Bike, ShoppingBag, PartyPopper, Clock, ChefHat } from "lucide-react";
 import { useAppState } from "../../context/AppContext";
 import { useTicker } from "../../utils/useTicker";
-import { estimateCompletion, formatCurrency, STATUS_STEP_INDEX } from "../../utils/helpers";
+import { formatClockTime, formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
 import Button from "../shared/Button";
+import DeliveryMapCard from "./DeliveryMapCard";
 
 function buildStages(fulfillment) {
   return [
@@ -13,61 +15,87 @@ function buildStages(fulfillment) {
       label: fulfillment === "delivery" ? "Out for Delivery" : "Ready for Pickup",
       icon: fulfillment === "delivery" ? Bike : ShoppingBag,
     },
-    { key: "completed", label: "Enjoy!", icon: PartyPopper },
+    { key: "done", label: "Enjoy!", icon: PartyPopper },
   ];
 }
 
-export default function OrderTracker({ order: orderProp, config, onNewOrder, onBackToAdmin }) {
+export default function OrderTracker({ order: orderProp, config, onNewOrder }) {
   const { orders } = useAppState();
   const now = useTicker(1000);
 
-  // Always read the freshest copy from global state so admin updates reflect instantly.
+  // Always read the freshest copy from global state so admin actions reflect instantly.
   const order = orders.find((o) => o.id === orderProp.id) || orderProp;
+  const timing = getOrderTiming(order, now);
+  const { stageIndex, overall } = timing;
+
+  const [showDelayBanner, setShowDelayBanner] = useState(false);
+  useEffect(() => {
+    if (!order.lastDelayAt) return;
+    setShowDelayBanner(true);
+    const timer = setTimeout(() => setShowDelayBanner(false), 6000);
+    return () => clearTimeout(timer);
+  }, [order.lastDelayAt]);
 
   const stages = buildStages(order.fulfillment);
-  const currentIndex = STATUS_STEP_INDEX[order.status];
-  const completionTs = estimateCompletion(order);
-  const minutesLeft = completionTs ? Math.max(0, Math.ceil((completionTs - now) / 60000)) : 0;
+
+  const etaText =
+    stageIndex === 0
+      ? "Confirming your order…"
+      : stageIndex === 1
+      ? `Estimated ready by ${formatClockTime(timing.readyAt)}`
+      : stageIndex === 2
+      ? order.fulfillment === "delivery"
+        ? `Estimated arrival: ${formatClockTime(timing.deliveryAt)}`
+        : "Ready now — come on by!"
+      : "Enjoy your meal!";
+
+  const countdownText =
+    stageIndex === 1
+      ? `Ready in ${formatCountdown(timing.secondsUntilReady)}`
+      : stageIndex === 2 && order.fulfillment === "delivery" && timing.bumped
+      ? `Arriving in ${formatCountdown(timing.secondsUntilDelivery)}`
+      : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F8F9FA]">
       <div className="border-b border-gray-100 bg-white px-4 py-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
-          {onBackToAdmin ? (
-            <button
-              onClick={onBackToAdmin}
-              className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-800"
-            >
-              <ArrowLeft size={14} /> Admin
-            </button>
-          ) : (
-            <span />
-          )}
+        <div className="mx-auto max-w-2xl text-center">
           <span className="text-sm font-extrabold text-gray-900">{config.name}</span>
-          <span className="w-12" />
         </div>
       </div>
 
       <div className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
+        {showDelayBanner && (
+          <div className="mb-5 flex items-center gap-3 rounded-2xl border border-[#F39C12]/30 bg-[#F39C12]/10 p-4 animate-fade-in">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F39C12] text-white">
+              <ChefHat size={16} />
+            </span>
+            <p className="text-sm font-semibold text-[#a5670c]">
+              Chef added a few extra minutes to make sure your crust is perfectly crisp!
+            </p>
+          </div>
+        )}
+
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Order {order.id}</p>
           <h1 className="mt-1 text-2xl font-extrabold text-gray-900 sm:text-3xl">
-            {order.status === "completed" ? "Bon Appétit! 🎉" : "Your pizza is on its way to perfection"}
+            {stageIndex === 3 ? "Bon Appétit! 🎉" : "Your pizza is on its way to perfection"}
           </h1>
 
-          {order.status !== "completed" && (
+          {stageIndex !== 3 && (
             <div
-              className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white shadow-sm"
+              className="mx-auto mt-4 inline-flex flex-col items-center gap-1 rounded-2xl px-4 py-2 text-sm font-bold text-white shadow-sm sm:flex-row sm:gap-2"
               style={{ backgroundColor: config.primaryColor }}
             >
-              <Clock size={15} />
-              {order.status === "received"
-                ? `Estimated completion in ${minutesLeft} min`
-                : order.status === "cooking"
-                ? `Ready in about ${minutesLeft} min`
-                : order.fulfillment === "delivery"
-                ? `Arriving in about ${minutesLeft} min`
-                : "Ready now — come on by!"}
+              <span className="flex items-center gap-2">
+                <Clock size={15} />
+                {etaText}
+              </span>
+              {countdownText && (
+                <span className="text-xs font-semibold opacity-90 sm:before:mr-1.5 sm:before:content-['·']">
+                  {countdownText}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -76,17 +104,17 @@ export default function OrderTracker({ order: orderProp, config, onNewOrder, onB
         <div className="relative mt-10">
           <div className="absolute inset-x-[12.5%] top-6 h-1.5 rounded-full bg-gray-200" />
           <div
-            className="absolute left-[12.5%] top-6 h-1.5 rounded-full transition-all duration-700 ease-out"
+            className="absolute left-[12.5%] top-6 h-1.5 rounded-full transition-all duration-1000 ease-linear"
             style={{
-              width: `${(currentIndex / (stages.length - 1)) * 75}%`,
+              width: `${(overall / (stages.length - 1)) * 75}%`,
               backgroundColor: config.primaryColor,
             }}
           />
           <div className="relative grid grid-cols-4">
             {stages.map((stage, i) => {
               const Icon = stage.icon;
-              const done = i < currentIndex;
-              const active = i === currentIndex;
+              const done = i < stageIndex;
+              const active = i === stageIndex;
               return (
                 <div key={stage.key} className="flex flex-col items-center gap-2">
                   <div
@@ -113,8 +141,12 @@ export default function OrderTracker({ order: orderProp, config, onNewOrder, onB
           </div>
         </div>
 
+        {order.fulfillment === "delivery" && stageIndex === 2 && (
+          <DeliveryMapCard progress={timing.stage2Progress} dispatched={timing.bumped} primaryColor={config.primaryColor} />
+        )}
+
         {/* Order summary */}
-        <div className="mt-10 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <h3 className="mb-3 text-sm font-extrabold text-gray-900">Order Summary</h3>
           <div className="space-y-1.5">
             {order.items.map((it) => (
@@ -136,7 +168,7 @@ export default function OrderTracker({ order: orderProp, config, onNewOrder, onB
           </div>
         </div>
 
-        {order.status === "completed" && (
+        {stageIndex === 3 && (
           <div className="mt-6 text-center">
             <Button variant="primary" onClick={onNewOrder}>
               Start a New Order

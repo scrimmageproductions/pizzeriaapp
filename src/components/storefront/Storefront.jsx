@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useAppActions, useAppState } from "../../context/AppContext";
+import { buildOrder } from "../../data/mockData";
 import StorefrontHeader from "./StorefrontHeader";
 import MenuList from "./MenuList";
 import CartDrawer from "./CartDrawer";
 import OrderTracker from "./OrderTracker";
 
-export default function Storefront({ onBackToAdmin }) {
+export default function Storefront() {
   const { config, categories, items, coupons, orders } = useAppState();
   const { addOrder } = useAppActions();
 
@@ -36,18 +37,15 @@ export default function Storefront({ onBackToAdmin }) {
 
   const placeOrder = ({ customerName, fulfillment, address, total }) => {
     const orderId = `PZ-${Math.floor(1000 + Math.random() * 9000)}`;
-    const order = {
+    const order = buildOrder({
       id: orderId,
       customerName,
       items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price })),
       fulfillment,
       address,
-      status: "received",
-      createdAt: Date.now(),
-      prepTimeMinutes: config.prepTimeMinutes,
-      deliveryTransitMinutes: config.deliveryTransitMinutes,
       total,
-    };
+      config,
+    });
     addOrder(order);
     setActiveOrderId(orderId);
     setCart([]);
@@ -55,24 +53,12 @@ export default function Storefront({ onBackToAdmin }) {
   };
 
   if (activeOrder) {
-    return (
-      <OrderTracker
-        order={activeOrder}
-        config={config}
-        onNewOrder={() => setActiveOrderId(null)}
-        onBackToAdmin={onBackToAdmin}
-      />
-    );
+    return <OrderTracker order={activeOrder} config={config} onNewOrder={() => setActiveOrderId(null)} />;
   }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
-      <StorefrontHeader
-        config={config}
-        cartCount={cartCount}
-        onOpenCart={() => setCartOpen(true)}
-        onBackToAdmin={onBackToAdmin}
-      />
+      <StorefrontHeader config={config} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
       <MenuList
         categories={categories}
         items={items}

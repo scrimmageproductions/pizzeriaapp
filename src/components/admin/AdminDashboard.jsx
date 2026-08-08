@@ -1,16 +1,5 @@
 import { useState } from "react";
-import {
-  Store,
-  Palette,
-  UtensilsCrossed,
-  Tag,
-  Link2,
-  LayoutGrid,
-  Pizza,
-  Menu,
-  X,
-  Eye,
-} from "lucide-react";
+import { Store, Palette, UtensilsCrossed, Tag, Link2, LayoutGrid, Pizza, Menu, X } from "lucide-react";
 import { useAppState } from "../../context/AppContext";
 import ShopProfileSection from "./ShopProfileSection";
 import BrandDesignSection from "./BrandDesignSection";
@@ -28,12 +17,12 @@ const NAV_ITEMS = [
   { id: "orders", label: "Live Order Manager", icon: LayoutGrid },
 ];
 
-export default function AdminDashboard({ onPreviewStorefront }) {
+export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState("orders");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { config, orders } = useAppState();
 
-  const activeOrderCount = orders.filter((o) => o.status !== "completed").length;
+  const activeOrderCount = orders.filter((o) => o.dispatchedAt == null).length;
 
   const renderSection = () => {
     switch (activeSection) {
@@ -59,7 +48,7 @@ export default function AdminDashboard({ onPreviewStorefront }) {
   return (
     <div className="flex h-full min-h-screen bg-gray-50">
       {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
+      <div className="fixed inset-x-0 top-12 z-30 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
         <button
           onClick={() => setMobileNavOpen(true)}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
@@ -67,17 +56,12 @@ export default function AdminDashboard({ onPreviewStorefront }) {
           <Menu size={20} />
         </button>
         <span className="text-sm font-bold text-gray-900">{activeLabel}</span>
-        <button
-          onClick={onPreviewStorefront}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-[#E31837] hover:bg-red-50"
-        >
-          <Eye size={20} />
-        </button>
+        <span className="w-9" />
       </div>
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 top-12 z-40 flex w-72 flex-col border-r border-gray-200 bg-white transition-transform duration-200 lg:sticky lg:top-12 lg:h-[calc(100vh-3rem)] lg:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -144,16 +128,6 @@ export default function AdminDashboard({ onPreviewStorefront }) {
             );
           })}
         </nav>
-
-        <div className="border-t border-gray-100 p-3">
-          <button
-            onClick={onPreviewStorefront}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-3 py-2.5 text-sm font-semibold text-white hover:bg-gray-800"
-          >
-            <Eye size={16} />
-            Preview Storefront
-          </button>
-        </div>
       </aside>
 
       {mobileNavOpen && (

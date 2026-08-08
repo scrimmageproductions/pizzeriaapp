@@ -76,20 +76,19 @@ function reducer(state, action) {
 
     case "ADD_ORDER":
       return { ...state, orders: [action.payload, ...state.orders] };
-    case "UPDATE_ORDER_STATUS":
+    case "BUMP_ORDER":
       return {
         ...state,
-        orders: state.orders.map((o) => (o.id === action.payload.id ? { ...o, status: action.payload.status } : o)),
+        orders: state.orders.map((o) =>
+          o.id === action.payload.id && o.dispatchedAt == null ? { ...o, dispatchedAt: Date.now() } : o
+        ),
       };
-    case "ADJUST_ORDER_TIME":
+    case "ADD_RUSH_DELAY":
       return {
         ...state,
         orders: state.orders.map((o) =>
           o.id === action.payload.id
-            ? {
-                ...o,
-                prepTimeMinutes: Math.max(0, o.prepTimeMinutes + action.payload.deltaMinutes),
-              }
+            ? { ...o, delaySeconds: o.delaySeconds + action.payload.seconds, lastDelayAt: Date.now() }
             : o
         ),
       };
@@ -120,8 +119,8 @@ export function AppProvider({ children }) {
       deleteCoupon: (id) => dispatch({ type: "DELETE_COUPON", payload: { id } }),
 
       addOrder: (order) => dispatch({ type: "ADD_ORDER", payload: order }),
-      updateOrderStatus: (id, status) => dispatch({ type: "UPDATE_ORDER_STATUS", payload: { id, status } }),
-      adjustOrderTime: (id, deltaMinutes) => dispatch({ type: "ADJUST_ORDER_TIME", payload: { id, deltaMinutes } }),
+      bumpOrder: (id) => dispatch({ type: "BUMP_ORDER", payload: { id } }),
+      addRushDelay: (id, seconds = 300) => dispatch({ type: "ADD_RUSH_DELAY", payload: { id, seconds } }),
     }),
     []
   );

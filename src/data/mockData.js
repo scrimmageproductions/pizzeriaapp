@@ -26,9 +26,11 @@ export const initialConfig = {
     open: "11:00",
     close: "22:00",
   },
-  prepTimeMinutes: 18,
+  prepTimeMinutes: 4,
+  bakeTimeMinutes: 7,
   deliveryEnabled: true,
-  deliveryTransitMinutes: 25,
+  deliveryTransitMinutes: 15,
+  autoAcceptOrders: true,
   logoUrl: "",
   coverUrl: "",
   primaryColor: BRAND_COLORS.tomato,
@@ -176,19 +178,32 @@ export const initialCoupons = [
   { id: "coupon_flat5", code: "FLAT5", type: "flat", value: 5, active: true },
 ];
 
-export const ORDER_STATUSES = ["received", "cooking", "ready", "completed"];
-
-export const STATUS_LABELS = {
-  received: "Order Received",
-  cooking: "Prepping & Baking",
-  ready: "Ready",
-  completed: "Completed",
-};
-
-const now = Date.now();
+/**
+ * Builds an order carrying an immutable timing snapshot of the shop's config at the moment
+ * it was placed. Everything the KDS and customer tracker display — stage, progress, ETA — is
+ * later derived purely from these timestamps (see utils/helpers.js#getOrderTiming).
+ */
+export function buildOrder({ id, customerName, items, fulfillment, address, total, config, createdAt = Date.now() }) {
+  const acceptedAt = createdAt + (config.autoAcceptOrders ? 0 : 10000);
+  return {
+    id,
+    customerName,
+    items,
+    fulfillment,
+    address,
+    total,
+    createdAt,
+    acceptedAt,
+    prepBakeSeconds: (config.prepTimeMinutes + config.bakeTimeMinutes) * 60,
+    transitSeconds: fulfillment === "delivery" ? config.deliveryTransitMinutes * 60 : 0,
+    delaySeconds: 0,
+    lastDelayAt: null,
+    dispatchedAt: null,
+  };
+}
 
 export const initialOrders = [
-  {
+  buildOrder({
     id: "PZ-1042",
     customerName: "Jordan Lee",
     items: [
@@ -197,13 +212,11 @@ export const initialOrders = [
     ],
     fulfillment: "delivery",
     address: "88 Willow Ave, Brooklyn, NY",
-    status: "cooking",
-    createdAt: now - 6 * 60 * 1000,
-    prepTimeMinutes: 18,
-    deliveryTransitMinutes: 25,
     total: 23.0,
-  },
-  {
+    config: initialConfig,
+    createdAt: Date.now() - 9 * 60 * 1000, // 9 min into an 11 min prep+bake — nearly ready
+  }),
+  buildOrder({
     id: "PZ-1043",
     customerName: "Sam Rivera",
     items: [
@@ -212,10 +225,8 @@ export const initialOrders = [
     ],
     fulfillment: "pickup",
     address: null,
-    status: "received",
-    createdAt: now - 2 * 60 * 1000,
-    prepTimeMinutes: 18,
-    deliveryTransitMinutes: 0,
     total: 39.5,
-  },
+    config: initialConfig,
+    createdAt: Date.now() - 3 * 60 * 1000, // 3 min into an 11 min prep+bake — freshly cooking
+  }),
 ];

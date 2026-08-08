@@ -1,8 +1,8 @@
-import { Star, MapPin, Phone, ShoppingCart, ArrowLeft, Pizza } from "lucide-react";
+import { Star, MapPin, Phone, ShoppingCart, Pizza } from "lucide-react";
 import { isShopOpen, formatHour } from "../../utils/helpers";
 import { FONT_OPTIONS } from "../../data/mockData";
 
-export default function StorefrontHeader({ config, cartCount, onOpenCart, onBackToAdmin }) {
+export default function StorefrontHeader({ config, cartCount, onOpenCart }) {
   const open = isShopOpen(config.hours);
   const fontFamily = FONT_OPTIONS.find((f) => f.id === config.font)?.family;
 
@@ -17,18 +17,10 @@ export default function StorefrontHeader({ config, cartCount, onOpenCart, onBack
         }}
       >
         <div className="flex h-full flex-col justify-between bg-black/20 p-4">
-          <div className="flex items-center justify-between">
-            {onBackToAdmin && (
-              <button
-                onClick={onBackToAdmin}
-                className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow backdrop-blur"
-              >
-                <ArrowLeft size={13} /> Admin
-              </button>
-            )}
+          <div className="flex items-center justify-end">
             <button
               onClick={onOpenCart}
-              className="relative ml-auto flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow backdrop-blur"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow backdrop-blur"
             >
               <ShoppingCart size={18} />
               {cartCount > 0 && (

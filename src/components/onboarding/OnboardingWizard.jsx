@@ -63,7 +63,7 @@ export default function OnboardingWizard() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E31837] text-white">
             <Pizza size={16} />
           </span>
-          <span className="text-sm font-extrabold text-gray-900">PizzaPlug</span>
+          <span className="text-sm font-extrabold text-gray-900">DeepDish</span>
         </div>
 
         <div className="flex items-center gap-1.5">

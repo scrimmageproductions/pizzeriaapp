@@ -2,9 +2,10 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useShopState } from "../../context/ShopContext";
 import AdminLayout from "./AdminLayout";
 import OverviewPage from "./OverviewPage";
-import MenuManagerPage from "./MenuManagerPage";
-import StoreSettingsPage from "./StoreSettingsPage";
 import OrderKDSPage from "./OrderKDSPage";
+import MenuBrandManagerPage from "./MenuBrandManagerPage";
+import CrmPage from "./CrmPage";
+import MarketingPage from "./MarketingPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -16,9 +17,10 @@ export default function AdminApp() {
     <AdminLayout>
       <Routes>
         <Route index element={<OverviewPage />} />
-        <Route path="menu" element={<MenuManagerPage />} />
-        <Route path="settings" element={<StoreSettingsPage />} />
         <Route path="kds" element={<OrderKDSPage />} />
+        <Route path="menu" element={<MenuBrandManagerPage />} />
+        <Route path="crm" element={<CrmPage />} />
+        <Route path="marketing" element={<MarketingPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

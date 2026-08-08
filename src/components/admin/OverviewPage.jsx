@@ -1,15 +1,26 @@
 import { useState } from "react";
-import { Link2, ShoppingBag, Copy, Check, ExternalLink, LayoutGrid, CircleDot } from "lucide-react";
+import { Link2, TrendingUp, Copy, Check, ExternalLink, LayoutGrid, Users, PiggyBank, Ban, Palette, Database } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
+import { formatCurrency } from "../../utils/helpers";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
 
+const COMMISSION_RATE = 0.15;
+
+const PILLARS = [
+  { icon: Ban, label: "0% Commissions", description: "Flat $99/month. Every order is 100% yours." },
+  { icon: Palette, label: "100% White-Labeled", description: "No DeepDish branding, anywhere your customers look." },
+  { icon: Database, label: "You Own the Data", description: "Every customer record is exportable, always." },
+];
+
 export default function OverviewPage() {
-  const { shop, items, orders } = useShopState();
+  const { shop, orders, customers } = useShopState();
   const [copied, setCopied] = useState(false);
 
   const publicUrl = `${window.location.origin}/${shop.slug}`;
   const activeOrderCount = orders.filter((o) => !o.completedAt).length;
+  const totalSales = shop.mockSalesBaseline + orders.reduce((sum, o) => sum + o.total, 0);
+  const commissionSaved = totalSales * COMMISSION_RATE;
 
   const handleCopy = async () => {
     try {
@@ -45,12 +56,12 @@ export default function OverviewPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E31837]/10 text-[#E31837]">
-              <ShoppingBag size={20} />
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0EA5E9]/10 text-[#0EA5E9]">
+              <TrendingUp size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{items.length}</p>
-              <p className="text-xs text-gray-500">Menu items</p>
+              <p className="text-2xl font-extrabold text-gray-900">{formatCurrency(totalSales)}</p>
+              <p className="text-xs text-gray-500">Total sales this month</p>
             </div>
           </div>
         </Card>
@@ -67,19 +78,50 @@ export default function OverviewPage() {
         </Card>
         <Card>
           <div className="flex items-center gap-3">
-            <span
-              className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                shop.acceptingOrders ? "bg-[#00A651]/10 text-[#00A651]" : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              <CircleDot size={20} />
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00A651]/10 text-[#00A651]">
+              <Users size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{shop.acceptingOrders ? "Open" : "Paused"}</p>
-              <p className="text-xs text-gray-500">Accepting orders</p>
+              <p className="text-2xl font-extrabold text-gray-900">{customers.length}</p>
+              <p className="text-xs text-gray-500">Customers in your CRM</p>
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* The moat, front and center */}
+      <div className="overflow-hidden rounded-2xl bg-[#121212] p-6 text-white shadow-lg sm:p-8">
+        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E31837]">
+              <PiggyBank size={26} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-white/60">Commission Saved this Month</p>
+              <p className="text-4xl font-extrabold tracking-tight">{formatCurrency(commissionSaved)}</p>
+            </div>
+          </div>
+          <p className="max-w-xs text-sm text-white/50">
+            That's what a 15% delivery-app commission would have taken from{" "}
+            <strong className="text-white/80">{formatCurrency(totalSales)}</strong> in sales. With DeepDish, it stays
+            in your pocket.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {PILLARS.map((p) => {
+          const Icon = p.icon;
+          return (
+            <Card key={p.label}>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E31837]/10 text-[#E31837]">
+                <Icon size={18} />
+              </span>
+              <p className="mt-3 text-sm font-bold text-gray-900">{p.label}</p>
+              <p className="mt-1 text-xs text-gray-500">{p.description}</p>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

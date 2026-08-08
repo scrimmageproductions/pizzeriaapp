@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { PauseCircle, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
+import { FONT_OPTIONS } from "../../data/brand";
 import StorefrontHeader from "./StorefrontHeader";
 import MenuList from "./MenuList";
 import CartDrawer from "./CartDrawer";
@@ -11,7 +12,7 @@ import OrderTracker from "./OrderTracker";
 export default function PublicStorefront() {
   const { slug } = useParams();
   const { shop, items, orders } = useShopState();
-  const { addOrder } = useShopActions();
+  const { addOrder, upsertCustomer } = useShopActions();
 
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -26,7 +27,7 @@ export default function PublicStorefront() {
           <Pizza size={28} />
         </span>
         <h1 className="text-xl font-extrabold text-gray-900">Shop not found</h1>
-        <p className="text-sm text-gray-500">There's no pizzeria at pizzaplug.com/{slug} yet.</p>
+        <p className="text-sm text-gray-500">There's no pizzeria at deepdish.store/{slug} yet.</p>
       </div>
     );
   }
@@ -53,11 +54,13 @@ export default function PublicStorefront() {
     setCheckoutOpen(true);
   };
 
-  const placeOrder = ({ customerName, fulfillment, address }) => {
-    const orderId = `PZ-${Math.floor(1000 + Math.random() * 9000)}`;
+  const placeOrder = ({ customerName, email, phone, fulfillment, address }) => {
+    const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
     const order = {
       id: orderId,
       customerName,
+      customerEmail: email,
+      customerPhone: phone,
       fulfillment,
       address,
       items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price })),
@@ -67,17 +70,20 @@ export default function PublicStorefront() {
       completedAt: null,
     };
     addOrder(order);
+    upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });
     setActiveOrderId(orderId);
     setCart([]);
     setCheckoutOpen(false);
   };
+
+  const fontFamily = FONT_OPTIONS.find((f) => f.id === shop.font)?.family;
 
   if (activeOrder) {
     return <OrderTracker order={activeOrder} shop={shop} onNewOrder={() => setActiveOrderId(null)} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]">
+    <div className="min-h-screen bg-[#F8F9FA]" style={{ fontFamily }}>
       <StorefrontHeader shop={shop} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
 
       {!shop.acceptingOrders && (

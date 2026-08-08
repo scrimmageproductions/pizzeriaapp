@@ -3,7 +3,7 @@
 @theme {
   --font-display: "Bangers", "Poppins", sans-serif;
   --font-fredoka: "Fredoka", "Poppins", sans-serif;
-  --font-body: "Poppins", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 html,

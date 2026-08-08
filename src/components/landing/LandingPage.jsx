@@ -1,24 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock, LayoutDashboard, Pizza, ScanLine, Smartphone, Sparkles } from "lucide-react";
+import { ArrowRight, Ban, Database, LayoutDashboard, Palette, Pizza, Sparkles } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 import Button from "../shared/Button";
 
-const FEATURES = [
+const PILLARS = [
   {
-    icon: ScanLine,
-    title: "Snap your paper menu",
-    description: "Upload a photo of your existing menu and we auto-build your digital one in seconds.",
+    icon: Ban,
+    title: "0% Commissions",
+    description: "One flat $99/month fee. Every dollar from every order is yours — no 30% cut to a middleman.",
   },
   {
-    icon: Smartphone,
-    title: "Your own ordering site",
-    description: "A branded, mobile-first storefront at your own link — no tech skills required.",
+    icon: Palette,
+    title: "100% White-Labeled",
+    description: "Your logo, your colors, your domain. No \"Powered by\" badge telling customers who really built it.",
   },
   {
-    icon: Clock,
-    title: "Orders that run themselves",
-    description: "A live kitchen display with automatic prep timers — no manual status clicks.",
+    icon: Database,
+    title: "You Own the Data",
+    description: "Every customer, every order, every phone number — exportable, yours, forever.",
   },
 ];
 
@@ -33,7 +33,7 @@ export default function LandingPage() {
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E31837] text-white">
             <Pizza size={18} />
           </span>
-          <span className="text-lg font-extrabold text-gray-900">PizzaPlug</span>
+          <span className="text-lg font-extrabold text-gray-900">DeepDish</span>
         </div>
         {shop && (
           <Button variant="outline" icon={LayoutDashboard} onClick={() => navigate("/admin")}>
@@ -42,14 +42,14 @@ export default function LandingPage() {
         )}
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 pb-24 pt-10 text-center sm:pt-20">
+      <main className="mx-auto max-w-4xl px-6 pb-24 pt-10 text-center sm:pt-16">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mx-auto flex w-fit items-center gap-1.5 rounded-full bg-[#F39C12]/10 px-3 py-1.5 text-xs font-bold text-[#F39C12]"
         >
-          <Sparkles size={13} /> Live in under 2 minutes — no credit card
+          <Sparkles size={13} /> The Anti-Aggregator for Pizzerias
         </motion.div>
 
         <motion.h1
@@ -58,9 +58,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.05 }}
           className="mt-6 text-4xl font-extrabold leading-tight text-gray-900 sm:text-6xl"
         >
-          Your pizzeria's own
-          <br />
-          <span className="text-[#E31837]">online ordering site.</span>
+          Keep your <span className="text-[#E31837]">dough.</span>
         </motion.h1>
 
         <motion.p
@@ -69,15 +67,14 @@ export default function LandingPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-lg text-gray-500"
         >
-          Snap a photo of your paper menu, upload your logo, and PizzaPlug builds a fully
-          branded ordering website and kitchen dashboard — instantly.
+          Stop paying 30% to delivery apps. Your App. Your Customers. <strong className="text-gray-800">0% Commissions.</strong>
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="mt-8 flex justify-center"
+          className="mt-8 flex flex-col items-center gap-4"
         >
           <Button
             size="lg"
@@ -87,10 +84,13 @@ export default function LandingPage() {
           >
             {shop ? "Go to Your Dashboard" : "Build My Free Site"}
           </Button>
+          <p className="text-sm font-semibold text-gray-400">
+            Flat <span className="text-gray-700">$99/month</span>. No commissions. No credit card to start.
+          </p>
         </motion.div>
 
         <div className="mt-20 grid gap-5 sm:grid-cols-3">
-          {FEATURES.map((f, i) => {
+          {PILLARS.map((f, i) => {
             const Icon = f.icon;
             return (
               <motion.div
@@ -109,6 +109,26 @@ export default function LandingPage() {
             );
           })}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.45 }}
+          className="mt-6 overflow-hidden rounded-2xl bg-[#121212] p-6 text-left text-white sm:p-8"
+        >
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-white/40">On a $3,000 month</p>
+              <p className="mt-2 text-3xl font-extrabold text-white/30 line-through">-$900 to a delivery app</p>
+              <p className="mt-1 text-xs text-white/40">at a typical 30% commission</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#F39C12]">With DeepDish</p>
+              <p className="mt-2 text-3xl font-extrabold text-white">-$99 flat, period.</p>
+              <p className="mt-1 text-xs text-white/50">Same sales. $801 more stays in your kitchen.</p>
+            </div>
+          </div>
+        </motion.div>
       </main>
     </div>
   );

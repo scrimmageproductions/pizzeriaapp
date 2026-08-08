@@ -18,9 +18,9 @@ export default function StepReveal({ name, slug, logoPreview, primaryColor, item
           </div>
           <p className="mt-3 text-lg font-extrabold text-gray-900">{name || "Your Pizzeria"}</p>
           <p className="flex items-center gap-1 text-xs text-gray-400">
-            <Star size={11} className="text-[#F39C12]" fill="currentColor" /> New on PizzaPlug
+            <Star size={11} className="text-[#F39C12]" fill="currentColor" /> New on DeepDish
           </p>
-          <p className="mt-2 text-xs font-semibold text-gray-400">pizzaplug.com/{slug}</p>
+          <p className="mt-2 text-xs font-semibold text-gray-400">deepdish.store/{slug}</p>
           <p className="mt-3 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">
             {itemCount} menu item{itemCount === 1 ? "" : "s"} ready
           </p>
@@ -35,7 +35,7 @@ export default function StepReveal({ name, slug, logoPreview, primaryColor, item
         onClick={onLaunch}
         disabled={launching}
       >
-        {launching ? "Launching…" : "Launch My App 🚀"}
+        {launching ? "Launching…" : "Launch My Store 🚀"}
       </Button>
     </div>
   );

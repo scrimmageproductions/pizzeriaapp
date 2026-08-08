@@ -1,15 +1,31 @@
-import { ClipboardCheck, Flame, PartyPopper, ShoppingBag, Clock, Bike } from "lucide-react";
+import { ClipboardCheck, Flame, PartyPopper, ShoppingBag, Clock, Bike, CookingPot } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 import { useTicker } from "../../utils/useTicker";
-import { formatClockTime, formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
+import { clamp, formatClockTime, formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
+import { FONT_OPTIONS } from "../../data/brand";
 import Button from "../shared/Button";
 
 function buildStages(fulfillment) {
   return [
     { key: "received", label: "Order Received", icon: ClipboardCheck },
     { key: "prepping", label: "Prepping", icon: Flame },
-    { key: "ready", label: fulfillment === "delivery" ? "Out for Delivery" : "Ready for Pickup", icon: fulfillment === "delivery" ? Bike : ShoppingBag },
+    { key: "baking", label: "Baking", icon: CookingPot },
+    { key: "ready", label: fulfillment === "delivery" ? "Out for Delivery" : "Ready", icon: fulfillment === "delivery" ? Bike : ShoppingBag },
   ];
+}
+
+/**
+ * The KDS engine only tracks 3 stages (Received/Prepping/Ready) — the customer-facing tracker
+ * splits the single "Prepping" window into two visual checkpoints (Prepping, then Baking) so it
+ * reads as a richer 4-step journey, without the admin board needing to know about it.
+ */
+function getVisualStage(timing) {
+  if (timing.stageIndex === 0) return { index: 0, overall: 0 };
+  if (timing.stageIndex === 1) {
+    const overall = 1 + clamp(timing.prepProgress, 0, 1) * 2; // slides 1 -> 3 across the whole prep window
+    return { index: timing.prepProgress < 0.5 ? 1 : 2, overall };
+  }
+  return { index: 3, overall: 3 };
 }
 
 export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
@@ -18,12 +34,13 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
 
   const order = orders.find((o) => o.id === orderProp.id) || orderProp;
   const timing = getOrderTiming(order, now);
-  const { stageIndex } = timing;
+  const visual = getVisualStage(timing);
   const stages = buildStages(order.fulfillment);
   const done = !!order.completedAt;
+  const fontFamily = FONT_OPTIONS.find((f) => f.id === shop.font)?.family;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F8F9FA]">
+    <div className="flex min-h-screen flex-col bg-[#F8F9FA]" style={{ fontFamily }}>
       <div className="border-b border-gray-100 bg-white px-4 py-4 text-center">
         <span className="text-sm font-extrabold text-gray-900">{shop.name}</span>
       </div>
@@ -41,9 +58,9 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
               style={{ backgroundColor: shop.primaryColor }}
             >
               <Clock size={15} />
-              {stageIndex === 0
+              {timing.stageIndex === 0
                 ? "Confirming your order…"
-                : stageIndex === 1
+                : timing.stageIndex === 1
                 ? `Ready by ${formatClockTime(timing.readyAt)} · ${formatCountdown(timing.secondsUntilReady)} left`
                 : order.fulfillment === "delivery"
                 ? "Your driver is on the way!"
@@ -53,19 +70,19 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
         </div>
 
         <div className="relative mt-10">
-          <div className="absolute inset-x-[16.5%] top-6 h-1.5 rounded-full bg-gray-200" />
+          <div className="absolute inset-x-[12.5%] top-6 h-1.5 rounded-full bg-gray-200" />
           <div
-            className="absolute left-[16.5%] top-6 h-1.5 rounded-full transition-all duration-1000 ease-linear"
+            className="absolute left-[12.5%] top-6 h-1.5 rounded-full transition-all duration-1000 ease-linear"
             style={{
-              width: `${(Math.min(stageIndex, 2) / 2) * 67}%`,
+              width: `${(visual.overall / (stages.length - 1)) * 75}%`,
               backgroundColor: shop.primaryColor,
             }}
           />
-          <div className="relative grid grid-cols-3">
+          <div className="relative grid grid-cols-4">
             {stages.map((stage, i) => {
               const Icon = stage.icon;
-              const isDone = i < stageIndex || done;
-              const active = i === stageIndex && !done;
+              const isDone = i < visual.index || done;
+              const active = i === visual.index && !done;
               return (
                 <div key={stage.key} className="flex flex-col items-center gap-2">
                   <div
@@ -77,7 +94,7 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
                       color: isDone || active ? "white" : "#9ca3af",
                     }}
                   >
-                    {done && i === stages.length - 1 ? <PartyPopper size={20} /> : <Icon size={20} />}
+                    {done && i === stages.length - 1 ? <PartyPopper size={20} /> : <Icon size={18} />}
                   </div>
                   <span className={`w-full text-center text-[11px] font-bold leading-tight sm:text-xs ${isDone || active ? "text-gray-900" : "text-gray-400"}`}>
                     {stage.label}

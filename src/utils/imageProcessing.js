@@ -66,7 +66,7 @@ function computeDominantColor(pixels) {
     if (!best || bucket.count > best.count) best = bucket;
   }
 
-  if (!best) return "#E31837"; // logo was all near-white/black/gray — fall back to the PizzaPlug red.
+  if (!best) return "#E31837"; // logo was all near-white/black/gray — fall back to the DeepDish red.
 
   const r = Math.round(best.r / best.count);
   const g = Math.round(best.g / best.count);

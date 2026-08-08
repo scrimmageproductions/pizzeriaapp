@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import { loadState, saveState } from "../utils/storage";
 import { uid } from "../utils/helpers";
+import { buildMockCustomers, buildSeedOrders } from "../data/mockCrm";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -9,6 +10,7 @@ const DEFAULT_STATE = {
   shop: null, // null until onboarding completes
   items: [],
   orders: [],
+  customers: [],
 };
 
 function init() {
@@ -18,20 +20,28 @@ function init() {
 
 function reducer(state, action) {
   switch (action.type) {
-    case "COMPLETE_ONBOARDING":
+    case "COMPLETE_ONBOARDING": {
+      const shop = {
+        name: action.payload.name,
+        slug: action.payload.slug,
+        logoUrl: action.payload.logoUrl || "",
+        primaryColor: action.payload.primaryColor || "#E31837",
+        font: "poppins",
+        hours: { open: "11:00", close: "22:00" },
+        acceptingOrders: true,
+        prepMinutes: 15,
+        mockSalesBaseline: 3000, // seeds "Commission Saved" so the moat is visible on day one
+        winBackSmsEnabled: true,
+        abandonedCartSmsEnabled: false,
+        createdAt: Date.now(),
+      };
       return {
         ...state,
-        shop: {
-          name: action.payload.name,
-          slug: action.payload.slug,
-          logoUrl: action.payload.logoUrl || "",
-          primaryColor: action.payload.primaryColor || "#E31837",
-          hours: { open: "11:00", close: "22:00" },
-          acceptingOrders: true,
-          prepMinutes: 15,
-          createdAt: Date.now(),
-        },
+        shop,
+        orders: buildSeedOrders({ prepMinutes: shop.prepMinutes, items: state.items }),
+        customers: buildMockCustomers(),
       };
+    }
 
     case "UPDATE_SHOP":
       return { ...state, shop: state.shop ? { ...state.shop, ...action.payload } : state.shop };
@@ -55,6 +65,28 @@ function reducer(state, action) {
         ...state,
         orders: state.orders.map((o) => (o.id === action.payload.id ? { ...o, completedAt: Date.now() } : o)),
       };
+
+    case "UPSERT_CUSTOMER": {
+      const { name, email, phone, orderTotal } = action.payload;
+      const existing = state.customers.find((c) => c.email.toLowerCase() === email.toLowerCase());
+      if (existing) {
+        return {
+          ...state,
+          customers: state.customers.map((c) =>
+            c.id === existing.id
+              ? { ...c, totalOrders: c.totalOrders + 1, lifetimeValue: c.lifetimeValue + orderTotal, lastOrderAt: Date.now() }
+              : c
+          ),
+        };
+      }
+      return {
+        ...state,
+        customers: [
+          { id: uid("cust"), name, email, phone, totalOrders: 1, lifetimeValue: orderTotal, lastOrderAt: Date.now() },
+          ...state.customers,
+        ],
+      };
+    }
 
     default:
       return state;
@@ -80,6 +112,8 @@ export function ShopProvider({ children }) {
 
       addOrder: (order) => dispatch({ type: "ADD_ORDER", payload: order }),
       completeOrder: (id) => dispatch({ type: "COMPLETE_ORDER", payload: { id } }),
+
+      upsertCustomer: (payload) => dispatch({ type: "UPSERT_CUSTOMER", payload }),
     }),
     []
   );

@@ -36,7 +36,7 @@ export default function StepClaimShop({ name, onNameChange, onNext }) {
         >
           <Link2 size={15} />
           <span>
-            pizzaplug.com/<strong>{slug || "your-shop-name"}</strong>
+            deepdish.store/<strong>{slug || "your-shop-name"}</strong>
           </span>
         </div>
 

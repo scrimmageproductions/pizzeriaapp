@@ -1,15 +1,17 @@
 # PizzaPlug
 
-A multi-tenant SaaS prototype that lets pizzeria owners generate, customize, and manage a
-digital storefront, while giving their customers a seamless ordering and live-tracking
-experience — all in a single React app.
+A dual-sided SaaS prototype for local pizzerias: a frictionless onboarding wizard that turns a
+paper menu and a logo into a live, branded ordering website in under a minute, plus the owner
+dashboard and customer storefront that come with it.
 
 ## Stack
 
-- **React 19** + **Vite**
+- **React 19** + **Vite** + **React Router DOM**
 - **Tailwind CSS v4**
+- **Framer Motion** for the onboarding transitions and confetti
 - **Lucide React** for icons
-- Multi-tenant state simulated with a single React Context + reducer (`src/context/AppContext.jsx`)
+- State lives in a single React Context + reducer (`src/context/ShopContext.jsx`), synced to
+  `localStorage` on every change — refreshing the page never loses data.
 
 ## Running locally
 
@@ -18,19 +20,31 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL. The app boots directly into the **Admin Command Center**,
-pre-populated with a sample pizzeria ("Luigi's Pizza"), a full menu, two coupons, and two
-active orders already in flight.
+Open the printed local URL.
 
-## What's inside
+## Routes
 
-- **Admin dashboard** (`src/components/admin`) — shop profile & logistics, brand/design
-  (logo, colors, font), a menu builder with a simulated AI paper-menu scanner, deals &
-  coupons, mocked Google Reviews / Sheets integrations, and a live Kanban-style Kitchen
-  Display System for managing orders in real time.
-- **Customer storefront** (`src/components/storefront`) — a mobile-first menu, cart drawer
-  with promo codes and pickup/delivery selection, and a live 4-stage order tracker.
-- Click **Preview Storefront** (bottom of the admin sidebar) to jump to the customer view.
-  Both views stay mounted, so placing an order and switching back to Admin to advance its
-  status (Accept → In the Oven → Ready → Completed) is reflected instantly back on the
-  customer's tracker.
+- `/` — marketing landing page
+- `/onboarding` — the 4-step "Claim Shop → Branding → Menu Scan → Launch" wizard
+- `/admin` — the owner dashboard (Overview, Menu Manager, Store Settings, Order KDS); redirects
+  to `/onboarding` if no shop has been created yet
+- `/:slug` — the public, customer-facing ordering site for that shop
+
+## The onboarding "magic moment"
+
+1. **Claim Your Shop** — type a name, watch `pizzaplug.com/your-slug` generate live.
+2. **Smart Branding** — drop in a logo; a real canvas-based color sampler (not a mock) picks
+   the dominant color from the image and sets it as the brand color.
+3. **Paper to Digital** — drop a photo of a paper menu (or skip); a mock 3-second "scan"
+   populates 5 realistic items across Pizzas/Sides directly into the shared menu state.
+4. **Launch My App 🚀** — fires a confetti burst, creates the shop, opens the new public site
+   in a new tab, and drops the owner into `/admin`.
+
+## Automated Order KDS
+
+Orders auto-accept and cook themselves off the shop's configured prep time — nobody clicks
+through "accepted → cooking → ready" by hand. The Kitchen Display System is a live 3-column
+Kanban board (Order Received / Prepping / Ready); the only manual action is completing an
+order once it's picked up or handed to a driver. Placing an order on the public storefront
+appears on the KDS instantly, and the customer's tracker reflects admin-side changes live —
+both read the same shared, persisted state.

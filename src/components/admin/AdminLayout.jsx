@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, LayoutGrid, Megaphone, Menu, Palette, Pizza, Store, Users, X } from "lucide-react";
+import { Ban, Bike, LayoutGrid, Megaphone, Menu, Palette, Pizza, Store, Tablet, Users, X } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Overview", icon: Store },
   { to: "/admin/kds", label: "Live Order KDS", icon: LayoutGrid },
+  { to: "/admin/pos", label: "Tablet POS", icon: Tablet },
+  { to: "/admin/delivery", label: "Delivery Dispatch", icon: Bike },
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },

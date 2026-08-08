@@ -1,7 +1,7 @@
 // Seed CRM + KDS data so a freshly-onboarded shop feels like a real, running business —
 // this is the data DeepDish hands the owner outright (the "data sovereignty" pillar), not a
 // sample the platform holds hostage.
-import { uid } from "../utils/helpers";
+import { jitterLatLng, uid } from "../utils/helpers";
 
 export const MOCK_CUSTOMERS = [
   { name: "Maria Gonzalez", email: "maria.g@example.com", phone: "(555) 201-4471", totalOrders: 12, lifetimeValue: 342.5 },
@@ -15,12 +15,17 @@ export function buildMockCustomers() {
   return MOCK_CUSTOMERS.map((c) => ({ id: uid("cust"), ...c, lastOrderAt: Date.now() - Math.random() * 20 * 86400000 }));
 }
 
-/** Two orders already mid-cook on the KDS the moment a shop launches. */
-export function buildSeedOrders({ prepMinutes, items }) {
+/**
+ * Two orders already on the board the moment a shop launches: one delivery order already
+ * "Ready" (so the Delivery Dispatch map has an immediate pin to show), one pickup order still
+ * mid-cook (so the KDS demonstrates its live countdown too).
+ */
+export function buildSeedOrders({ prepMinutes, items, shop }) {
   if (items.length === 0) return []; // no menu yet (scan step was skipped) — nothing to seed an order with
 
   const now = Date.now();
   const pick = (i) => items[i % items.length];
+  const deliveryDestination = jitterLatLng(shop.lat, shop.lng);
 
   return [
     {
@@ -32,9 +37,16 @@ export function buildSeedOrders({ prepMinutes, items }) {
       address: "412 Willow Ave",
       items: [{ itemId: pick(0).id, name: pick(0).name, qty: 1, price: pick(0).price }],
       total: pick(0).price * 1.08,
-      createdAt: now - (prepMinutes - 3) * 60000, // 3 minutes from ready
+      createdAt: now - (prepMinutes + 5) * 60000, // already past ready — populates the dispatch queue instantly
       prepMinutes,
       completedAt: null,
+      source: "online",
+      paymentMethod: "card",
+      paidAt: now - (prepMinutes + 5) * 60000,
+      assignedDriver: null,
+      dispatchedAt: null,
+      lat: deliveryDestination.lat,
+      lng: deliveryDestination.lng,
     },
     {
       id: `DD-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -51,6 +63,13 @@ export function buildSeedOrders({ prepMinutes, items }) {
       createdAt: now - Math.min(4, prepMinutes - 1) * 60000, // well into prep
       prepMinutes,
       completedAt: null,
+      source: "online",
+      paymentMethod: "card",
+      paidAt: now - Math.min(4, prepMinutes - 1) * 60000,
+      assignedDriver: null,
+      dispatchedAt: null,
+      lat: null,
+      lng: null,
     },
   ];
 }

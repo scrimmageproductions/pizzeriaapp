@@ -89,3 +89,15 @@ export function sortOrdersByUrgency(orders, now) {
     return ta.readyAt - tb.readyAt;
   });
 }
+
+/**
+ * A random point within `maxKm` of (lat, lng) — stands in for real geocoding of a delivery
+ * address so the dispatch map has a destination pin to drop without calling any mapping API.
+ */
+export function jitterLatLng(lat, lng, maxKm = 3) {
+  const kmPerDegLat = 111;
+  const kmPerDegLng = 111 * Math.cos((lat * Math.PI) / 180);
+  const dLat = ((Math.random() - 0.5) * 2 * maxKm) / kmPerDegLat;
+  const dLng = ((Math.random() - 0.5) * 2 * maxKm) / kmPerDegLng;
+  return { lat: lat + dLat, lng: lng + dLng };
+}

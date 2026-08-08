@@ -6,6 +6,7 @@ import OrderKDSPage from "./OrderKDSPage";
 import MenuBrandManagerPage from "./MenuBrandManagerPage";
 import CrmPage from "./CrmPage";
 import MarketingPage from "./MarketingPage";
+import DeliveryDispatchPage from "./DeliveryDispatchPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -18,6 +19,7 @@ export default function AdminApp() {
       <Routes>
         <Route index element={<OverviewPage />} />
         <Route path="kds" element={<OrderKDSPage />} />
+        <Route path="delivery" element={<DeliveryDispatchPage />} />
         <Route path="menu" element={<MenuBrandManagerPage />} />
         <Route path="crm" element={<CrmPage />} />
         <Route path="marketing" element={<MarketingPage />} />

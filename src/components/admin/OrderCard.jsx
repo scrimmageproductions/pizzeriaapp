@@ -60,10 +60,13 @@ export default function OrderCard({ order, now, accentColor }) {
         <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
       </div>
 
-      {stageIndex === 2 && !order.completedAt && (
+      {stageIndex === 2 && !order.completedAt && order.fulfillment === "pickup" && (
         <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => completeOrder(order.id)}>
           Complete Order
         </Button>
+      )}
+      {stageIndex === 2 && !order.completedAt && order.fulfillment === "delivery" && (
+        <p className="mt-3 text-center text-xs font-semibold text-[#F39C12]">Ready — assign a driver in Delivery Dispatch</p>
       )}
       {order.completedAt && (
         <p className="mt-3 text-center text-xs font-semibold text-gray-400">Completed — order closed out</p>

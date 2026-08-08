@@ -1,4 +1,4 @@
-const STORAGE_KEY = "deepdish:v1";
+export const STORAGE_KEY = "deepdish:v1";
 
 export function loadState() {
   try {

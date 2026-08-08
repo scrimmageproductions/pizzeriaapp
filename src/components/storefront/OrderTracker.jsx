@@ -5,12 +5,13 @@ import { clamp, formatClockTime, formatCountdown, formatCurrency, getOrderTiming
 import { FONT_OPTIONS } from "../../data/brand";
 import Button from "../shared/Button";
 
-function buildStages(fulfillment) {
+function buildStages(fulfillment, dispatched) {
+  const readyLabel = fulfillment === "delivery" ? (dispatched ? "Out for Delivery" : "Ready") : "Ready";
   return [
     { key: "received", label: "Order Received", icon: ClipboardCheck },
     { key: "prepping", label: "Prepping", icon: Flame },
     { key: "baking", label: "Baking", icon: CookingPot },
-    { key: "ready", label: fulfillment === "delivery" ? "Out for Delivery" : "Ready", icon: fulfillment === "delivery" ? Bike : ShoppingBag },
+    { key: "ready", label: readyLabel, icon: fulfillment === "delivery" ? Bike : ShoppingBag },
   ];
 }
 
@@ -35,7 +36,8 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
   const order = orders.find((o) => o.id === orderProp.id) || orderProp;
   const timing = getOrderTiming(order, now);
   const visual = getVisualStage(timing);
-  const stages = buildStages(order.fulfillment);
+  const dispatched = !!order.assignedDriver;
+  const stages = buildStages(order.fulfillment, dispatched);
   const done = !!order.completedAt;
   const fontFamily = FONT_OPTIONS.find((f) => f.id === shop.font)?.family;
 
@@ -63,7 +65,9 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
                 : timing.stageIndex === 1
                 ? `Ready by ${formatClockTime(timing.readyAt)} · ${formatCountdown(timing.secondsUntilReady)} left`
                 : order.fulfillment === "delivery"
-                ? "Your driver is on the way!"
+                ? dispatched
+                  ? `${order.assignedDriver} is on the way!`
+                  : "Finding you a driver…"
                 : "Ready now — come on by!"}
             </div>
           )}

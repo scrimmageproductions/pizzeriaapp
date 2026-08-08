@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { PauseCircle, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { FONT_OPTIONS } from "../../data/brand";
+import { jitterLatLng } from "../../utils/helpers";
 import StorefrontHeader from "./StorefrontHeader";
 import MenuList from "./MenuList";
 import CartDrawer from "./CartDrawer";
@@ -56,6 +57,7 @@ export default function PublicStorefront() {
 
   const placeOrder = ({ customerName, email, phone, fulfillment, address }) => {
     const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const destination = fulfillment === "delivery" ? jitterLatLng(shop.lat, shop.lng) : { lat: null, lng: null };
     const order = {
       id: orderId,
       customerName,
@@ -68,6 +70,13 @@ export default function PublicStorefront() {
       createdAt: Date.now(),
       prepMinutes: shop.prepMinutes,
       completedAt: null,
+      source: "online",
+      paymentMethod: "card",
+      paidAt: Date.now(),
+      assignedDriver: null,
+      dispatchedAt: null,
+      lat: destination.lat,
+      lng: destination.lng,
     };
     addOrder(order);
     upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
-import { loadState, saveState } from "../utils/storage";
+import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
 import { uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedOrders } from "../data/mockCrm";
 
@@ -33,12 +33,14 @@ function reducer(state, action) {
         mockSalesBaseline: 3000, // seeds "Commission Saved" so the moat is visible on day one
         winBackSmsEnabled: true,
         abandonedCartSmsEnabled: false,
+        lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
+        lng: -73.9442,
         createdAt: Date.now(),
       };
       return {
         ...state,
         shop,
-        orders: buildSeedOrders({ prepMinutes: shop.prepMinutes, items: state.items }),
+        orders: buildSeedOrders({ prepMinutes: shop.prepMinutes, items: state.items, shop }),
         customers: buildMockCustomers(),
       };
     }
@@ -65,10 +67,28 @@ function reducer(state, action) {
         ...state,
         orders: state.orders.map((o) => (o.id === action.payload.id ? { ...o, completedAt: Date.now() } : o)),
       };
+    case "MARK_ORDER_PAID":
+      return {
+        ...state,
+        orders: state.orders.map((o) => (o.id === action.payload.id ? { ...o, paidAt: Date.now() } : o)),
+      };
+    case "ASSIGN_DRIVER":
+      return {
+        ...state,
+        orders: state.orders.map((o) =>
+          o.id === action.payload.id ? { ...o, assignedDriver: action.payload.driver, dispatchedAt: Date.now() } : o
+        ),
+      };
 
     case "UPSERT_CUSTOMER": {
       const { name, email, phone, orderTotal } = action.payload;
-      const existing = state.customers.find((c) => c.email.toLowerCase() === email.toLowerCase());
+      const emailKey = email?.trim().toLowerCase();
+      const phoneKey = phone?.trim();
+      if (!emailKey && !phoneKey) return state; // no identifying info (e.g. an anonymous walk-in) — nothing to record
+
+      const existing = state.customers.find(
+        (c) => (emailKey && c.email?.toLowerCase() === emailKey) || (phoneKey && c.phone === phoneKey)
+      );
       if (existing) {
         return {
           ...state,
@@ -82,11 +102,14 @@ function reducer(state, action) {
       return {
         ...state,
         customers: [
-          { id: uid("cust"), name, email, phone, totalOrders: 1, lifetimeValue: orderTotal, lastOrderAt: Date.now() },
+          { id: uid("cust"), name, email: email || "", phone: phone || "", totalOrders: 1, lifetimeValue: orderTotal, lastOrderAt: Date.now() },
           ...state.customers,
         ],
       };
     }
+
+    case "_HYDRATE":
+      return { ...DEFAULT_STATE, ...action.payload };
 
     default:
       return state;
@@ -100,6 +123,18 @@ export function ShopProvider({ children }) {
     saveState(state);
   }, [state]);
 
+  // Cross-tab sync: e.g. a customer completing a QR payment in one tab (opened from the POS
+  // screen's payment QR code) should be reflected immediately back on the POS tab.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== STORAGE_KEY) return;
+      const fresh = loadState();
+      if (fresh) dispatch({ type: "_HYDRATE", payload: fresh });
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const actions = useMemo(
     () => ({
       completeOnboarding: (payload) => dispatch({ type: "COMPLETE_ONBOARDING", payload }),
@@ -112,6 +147,8 @@ export function ShopProvider({ children }) {
 
       addOrder: (order) => dispatch({ type: "ADD_ORDER", payload: order }),
       completeOrder: (id) => dispatch({ type: "COMPLETE_ORDER", payload: { id } }),
+      markOrderPaid: (id) => dispatch({ type: "MARK_ORDER_PAID", payload: { id } }),
+      assignDriver: (id, driver) => dispatch({ type: "ASSIGN_DRIVER", payload: { id, driver } }),
 
       upsertCustomer: (payload) => dispatch({ type: "UPSERT_CUSTOMER", payload }),
     }),

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link2, TrendingUp, Copy, Check, ExternalLink, LayoutGrid, Users, PiggyBank, Ban, Palette, Database } from "lucide-react";
+import { Link2, TrendingUp, Copy, Check, ExternalLink, LayoutGrid, Users, PiggyBank, Ban, Palette, Database, Sparkles, Ticket } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 import { formatCurrency } from "../../utils/helpers";
+import { DEFAULT_CONVERSION_METRICS } from "../../data/loyalty";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
 
@@ -21,6 +22,7 @@ export default function OverviewPage() {
   const activeOrderCount = orders.filter((o) => !o.completedAt).length;
   const totalSales = shop.mockSalesBaseline + orders.reduce((sum, o) => sum + o.total, 0);
   const commissionSaved = totalSales * COMMISSION_RATE;
+  const conversionMetrics = shop.conversionMetrics || DEFAULT_CONVERSION_METRICS;
 
   const handleCopy = async () => {
     try {
@@ -105,6 +107,28 @@ export default function OverviewPage() {
             That's what a 15% delivery-app commission would have taken from{" "}
             <strong className="text-white/80">{formatCurrency(totalSales)}</strong> in sales. With DeepDish, it stays
             in your pocket.
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border-2 border-transparent bg-gradient-to-br from-[#7C3AED]/[0.05] to-[#E31837]/[0.05] p-6 shadow-sm ring-2 ring-[#7C3AED]/20 sm:p-8">
+        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#E31837] text-white">
+              <Ticket size={26} />
+            </span>
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-gray-500">
+                <Sparkles size={13} className="text-[#7C3AED]" /> Customers Converted from 3rd-Party Apps
+              </p>
+              <p className="text-4xl font-extrabold tracking-tight text-gray-900">{conversionMetrics.customersConverted}</p>
+              <p className="mt-1 text-sm text-gray-500">used code DIRECT15 this month</p>
+            </div>
+          </div>
+          <p className="max-w-xs text-sm text-gray-500">
+            Estimated Commission Saved:{" "}
+            <strong className="text-gray-900">{formatCurrency(conversionMetrics.commissionSaved)}</strong> — every Box
+            Topper coupon that gets redeemed is a customer DoorDash won't take a cut of again.
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Bluetooth, BluetoothConnected, Printer, PrinterCheck, Search } from "lucide-react";
+import { Bluetooth, BluetoothConnected, Printer, PrinterCheck, Search, Sparkles, Ticket } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
+import { buildBoxTopperMessage, shopDirectLink } from "../../utils/boxTopper";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
 import Toggle from "../shared/Toggle";
@@ -107,6 +108,37 @@ export default function PrinterSettingsPage() {
             />
           </div>
         )}
+      </Card>
+
+      <Card
+        title="Automated Box Toppers"
+        description="Turn expensive third-party customers into direct ones, one ticket at a time."
+        icon={Sparkles}
+        className="ring-2 ring-[#7C3AED]/20 bg-gradient-to-br from-[#7C3AED]/[0.04] to-[#E31837]/[0.04]"
+      >
+        <Toggle
+          checked={!!printer.autoPrintBoxTopper}
+          onChange={(val) => updateShop({ printer: { ...printer, autoPrintBoxTopper: val } })}
+          disabled={!printer.connected}
+          label="Auto-print 15% off conversion coupon for all Third-Party orders"
+          description={
+            printer.connected
+              ? "Prints a secondary ticket the moment a DoorDash/UberEats/Grubhub order goes Ready."
+              : "Connect a printer above to enable this."
+          }
+        />
+
+        <div className="mt-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-gray-400">
+            <Ticket size={12} /> Ticket Preview
+          </p>
+          <div className="rounded-lg bg-white p-4 text-center font-mono text-xs leading-relaxed text-gray-700 shadow-inner">
+            <p className="font-bold">*** {shop.name.toUpperCase()} ***</p>
+            <p className="mt-2">{buildBoxTopperMessage(shop)}</p>
+            <p className="mt-2 font-bold">CODE: DIRECT15</p>
+            <p className="mt-1">{shopDirectLink(shop)}</p>
+          </div>
+        </div>
       </Card>
 
       <Card title="Recent Print Activity" icon={PrinterCheck}>

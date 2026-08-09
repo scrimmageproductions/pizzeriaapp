@@ -1,6 +1,25 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, Bike, CreditCard, LayoutGrid, Megaphone, Menu, Package, Palette, Pizza, Printer, Store, Tablet, Users, X } from "lucide-react";
+import {
+  Ban,
+  Bike,
+  Car,
+  CreditCard,
+  FileText,
+  LayoutGrid,
+  Megaphone,
+  Menu,
+  Package,
+  Palette,
+  Pizza,
+  Plug,
+  Printer,
+  Store,
+  Tablet,
+  Terminal,
+  Users,
+  X,
+} from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
@@ -8,10 +27,14 @@ const NAV_ITEMS = [
   { to: "/admin/kds", label: "Live Order KDS", icon: LayoutGrid },
   { to: "/admin/pos", label: "Tablet POS", icon: Tablet },
   { to: "/admin/delivery", label: "Delivery Dispatch", icon: Bike },
+  { to: "/admin/dispatch-terminal", label: "Dispatch Terminal", icon: Terminal },
+  { to: "/admin/team", label: "🚗 Team & Drivers", icon: Car },
+  { to: "/admin/reports", label: "📊 Shift Reports", icon: FileText },
   { to: "/admin/inventory", label: "📦 AI Inventory", icon: Package },
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
+  { to: "/admin/integrations", label: "Delivery Apps", icon: Plug },
   { to: "/admin/printers", label: "🖨️ Hardware & Printers", icon: Printer },
   { to: "/admin/billing", label: "💳 Billing & Domains", icon: CreditCard },
 ];

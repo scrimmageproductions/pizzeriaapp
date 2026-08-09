@@ -10,6 +10,9 @@ import DeliveryDispatchPage from "./DeliveryDispatchPage";
 import InventoryPage from "./InventoryPage";
 import PrinterSettingsPage from "./PrinterSettingsPage";
 import BillingPage from "./BillingPage";
+import IntegrationsPage from "./IntegrationsPage";
+import TeamDriversPage from "./TeamDriversPage";
+import ShiftReportsPage from "./ShiftReportsPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -29,6 +32,9 @@ export default function AdminApp() {
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="printers" element={<PrinterSettingsPage />} />
         <Route path="billing" element={<BillingPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
+        <Route path="team" element={<TeamDriversPage />} />
+        <Route path="reports" element={<ShiftReportsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

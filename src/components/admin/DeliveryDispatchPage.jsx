@@ -1,12 +1,21 @@
 import { useState } from "react";
-import { Bike, ChevronDown, ChevronUp, MapPin, Navigation, User } from "lucide-react";
+import { Bike, ChevronDown, ChevronUp, Clock, MapPin, Navigation, User, Users } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { useTicker } from "../../utils/useTicker";
 import { formatCurrency, getOrderTiming } from "../../utils/helpers";
-import { MOCK_DRIVERS } from "../../data/drivers";
 import DeliveryMap from "./DeliveryMap";
 import Button from "../shared/Button";
 import { Select } from "../shared/FormField";
+
+const STATUS_META = {
+  OFF_CLOCK: { label: "Off Clock", dot: "bg-gray-300", text: "text-gray-400" },
+  IN_STORE: { label: "In Store", dot: "bg-[#F39C12]", text: "text-[#F39C12]" },
+  ON_ROAD: { label: "On Road", dot: "bg-[#00A651]", text: "text-[#00A651]" },
+};
+
+function elapsedMinutes(since, now) {
+  return Math.max(0, Math.round((now - since) / 60000));
+}
 
 function DeliveryTicket({ order, selected, onSelect, children }) {
   return (
@@ -42,9 +51,58 @@ function DeliveryTicket({ order, selected, onSelect, children }) {
   );
 }
 
+function DriverRoster({ drivers, orders, now }) {
+  const inStoreOrder = [...drivers].filter((d) => d.status === "IN_STORE").sort((a, b) => (a.inStoreSince || 0) - (b.inStoreSince || 0));
+  const nextUpId = inStoreOrder[0]?.id;
+
+  const statusLine = (driver) => {
+    if (driver.status === "ON_ROAD") {
+      const activeOrder = orders.find((o) => o.assignedDriverId === driver.id && !o.completedAt);
+      const mins = activeOrder ? elapsedMinutes(activeOrder.dispatchedAt || now, now) : 0;
+      return `On Road (${mins} min${mins === 1 ? "" : "s"})`;
+    }
+    if (driver.status === "IN_STORE") {
+      const mins = elapsedMinutes(driver.inStoreSince || now, now);
+      return `In Store (${mins} min${mins === 1 ? "" : "s"})${driver.id === nextUpId ? " — Next Up" : ""}`;
+    }
+    return "Off Clock";
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4">
+      <h3 className="mb-3 flex items-center gap-1.5 text-sm font-extrabold text-gray-700">
+        <Users size={15} /> Driver Roster
+      </h3>
+      {drivers.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-xs text-gray-400">
+          No drivers hired yet — add one in Team & Drivers.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {drivers.map((d) => {
+            const meta = STATUS_META[d.status] || STATUS_META.OFF_CLOCK;
+            return (
+              <div key={d.id} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5">
+                <span className="text-sm font-bold text-gray-900">{d.name}</span>
+                <span className={`flex items-center gap-1.5 text-xs font-semibold ${meta.text}`}>
+                  <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+                  {statusLine(d)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-400">
+        <Clock size={11} /> Auto-Dispatch assigns ready orders to the longest-waiting in-store driver.
+      </p>
+    </div>
+  );
+}
+
 export default function DeliveryDispatchPage() {
-  const { shop, orders } = useShopState();
-  const { assignDriver, completeOrder } = useShopActions();
+  const { shop, orders, drivers } = useShopState();
+  const { assignDriver, markOrderDelivered } = useShopActions();
   const now = useTicker(2000);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showDelivered, setShowDelivered] = useState(false);
@@ -57,6 +115,8 @@ export default function DeliveryDispatchPage() {
   const stillCooking = activeDelivery.length - readyDelivery.length;
   const delivered = allDelivery.filter((o) => o.completedAt);
 
+  const inStoreDrivers = drivers.filter((d) => d.status === "IN_STORE");
+
   const mapOrders = readyDelivery;
 
   return (
@@ -64,18 +124,21 @@ export default function DeliveryDispatchPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900">Delivery Dispatch</h1>
         <p className="flex items-center gap-1.5 text-sm text-gray-500">
-          <Bike size={15} /> Assign a driver the moment an order's ready — no delivery-app middleman required.
+          <Bike size={15} /> Auto-Dispatch hands off ready orders the moment a driver's in-store — no delivery-app middleman required.
         </p>
       </div>
 
-      <div className="h-80 overflow-hidden rounded-2xl border border-gray-200 shadow-sm sm:h-[420px]">
-        <DeliveryMap shop={shop} orders={mapOrders} selectedOrderId={selectedOrderId} />
+      <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+        <div className="h-80 overflow-hidden rounded-2xl border border-gray-200 shadow-sm sm:h-[420px]">
+          <DeliveryMap shop={shop} orders={mapOrders} selectedOrderId={selectedOrderId} />
+        </div>
+        <DriverRoster drivers={drivers} orders={orders} now={now} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border-t-4 border-t-[#F39C12] bg-gray-50/70 p-3">
           <div className="mb-3 flex items-center justify-between px-1">
-            <h3 className="text-sm font-extrabold text-gray-700">Ready — Needs a Driver</h3>
+            <h3 className="text-sm font-extrabold text-gray-700">Waiting for Driver</h3>
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-xs font-bold text-gray-500 shadow-sm">
               {unassigned.length}
             </span>
@@ -88,20 +151,22 @@ export default function DeliveryDispatchPage() {
             ) : (
               unassigned.map((order) => (
                 <DeliveryTicket key={order.id} order={order} selected={order.id === selectedOrderId} onSelect={setSelectedOrderId}>
-                  <Select
-                    defaultValue=""
-                    onChange={(e) => e.target.value && assignDriver(order.id, e.target.value)}
-                    className="text-xs"
-                  >
-                    <option value="" disabled>
-                      Assign to…
-                    </option>
-                    {MOCK_DRIVERS.map((d) => (
-                      <option key={d} value={d}>
-                        {d}
+                  {inStoreDrivers.length > 0 ? (
+                    <Select defaultValue="" onChange={(e) => e.target.value && assignDriver(order.id, e.target.value)} className="text-xs">
+                      <option value="" disabled>
+                        Override auto-assign…
                       </option>
-                    ))}
-                  </Select>
+                      {inStoreDrivers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <p className="text-center text-[11px] font-semibold text-gray-400">
+                      No in-store drivers — will assign the moment one punches in
+                    </p>
+                  )}
                 </DeliveryTicket>
               ))
             )}
@@ -132,7 +197,7 @@ export default function DeliveryDispatchPage() {
                     <span className="flex items-center gap-1 rounded-full bg-[#00A651]/10 px-2.5 py-1 text-xs font-bold text-[#00A651]">
                       <Navigation size={12} /> {order.assignedDriver}
                     </span>
-                    <Button variant="secondary" size="sm" onClick={() => completeOrder(order.id)}>
+                    <Button variant="secondary" size="sm" onClick={() => markOrderDelivered(order.id)}>
                       Mark Delivered
                     </Button>
                   </div>

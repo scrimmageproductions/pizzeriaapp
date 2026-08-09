@@ -3,17 +3,33 @@ import { useShopActions } from "../../context/ShopContext";
 import Button from "../shared/Button";
 import ProgressRing from "../shared/ProgressRing";
 import { formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
+import { THIRD_PARTY_META } from "../../data/thirdParty";
 
 export default function OrderCard({ order, now, accentColor }) {
   const { completeOrder } = useShopActions();
   const timing = getOrderTiming(order, now);
   const { stageIndex, prepProgress, secondsUntilReady } = timing;
+  const thirdParty = order.thirdPartySource ? THIRD_PARTY_META[order.thirdPartySource] : null;
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-extrabold text-gray-900">{order.id}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-extrabold text-gray-900">{order.id}</p>
+            {thirdParty ? (
+              <span
+                className="rounded-full px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
+                style={{ backgroundColor: thirdParty.bg, color: thirdParty.color }}
+              >
+                {thirdParty.label}
+              </span>
+            ) : (
+              <span className="rounded-full bg-gray-900 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                DeepDish
+              </span>
+            )}
+          </div>
           <p className="flex items-center gap-1 text-xs text-gray-500">
             <User size={11} /> {order.customerName}
           </p>
@@ -76,7 +92,9 @@ export default function OrderCard({ order, now, accentColor }) {
         </Button>
       )}
       {stageIndex === 2 && !order.completedAt && order.fulfillment === "delivery" && (
-        <p className="mt-3 text-center text-xs font-semibold text-[#F39C12]">Ready — assign a driver in Delivery Dispatch</p>
+        <p className="mt-3 text-center text-xs font-semibold text-[#F39C12]">
+          {order.assignedDriver ? `Out for delivery with ${order.assignedDriver}` : "Ready — auto-dispatching to next available driver"}
+        </p>
       )}
       {order.completedAt && (
         <p className="mt-3 text-center text-xs font-semibold text-gray-400">Completed — order closed out</p>

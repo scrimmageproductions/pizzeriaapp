@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { PauseCircle, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { FONT_OPTIONS } from "../../data/brand";
@@ -94,7 +94,9 @@ export default function PublicStorefront() {
       source: "online",
       paymentMethod: "card",
       paidAt: Date.now(),
+      thirdPartySource: null,
       assignedDriver: null,
+      assignedDriverId: null,
       dispatchedAt: null,
       lat: destination.lat,
       lng: destination.lng,
@@ -135,6 +137,12 @@ export default function PublicStorefront() {
         onAddToCart={addToCart}
         disabled={!shop.acceptingOrders}
       />
+
+      <footer className="mx-auto max-w-3xl px-4 pb-10 pt-4 text-center">
+        <Link to={`/${slug}/careers`} className="text-xs font-semibold text-gray-400 hover:text-gray-600">
+          🚗 We're Hiring Drivers!
+        </Link>
+      </footer>
 
       <CartDrawer
         open={cartOpen}

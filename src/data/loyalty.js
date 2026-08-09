@@ -20,3 +20,5 @@ export const DEFAULT_BILLING = {
 };
 
 export const DEFAULT_RECOVERED_SALES = 320;
+
+export const DEFAULT_CONVERSION_METRICS = { customersConverted: 42, commissionSaved: 315 };

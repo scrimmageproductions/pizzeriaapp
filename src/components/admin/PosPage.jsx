@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bike, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Bike, Minus, PhoneCall, Pizza, Plus, Smartphone, ShoppingBag, Trash2, UserRound } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
+import Toast from "../shared/Toast";
 import PosPaymentModal from "./PosPaymentModal";
 
 const TAX_RATE = 0.08;
@@ -30,6 +31,7 @@ export default function PosPage() {
   const [fulfillment, setFulfillment] = useState("pickup");
   const [address, setAddress] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [smsToast, setSmsToast] = useState("");
 
   if (!shop) return <Navigate to="/onboarding" replace />;
 
@@ -47,7 +49,7 @@ export default function PosPage() {
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
-  const isPhoneValid = orderType === "walkin" || (customerName.trim() && customerPhone.trim());
+  const isPhoneValid = orderType === "walkin" ? customerPhone.trim() : customerName.trim() && customerPhone.trim();
   const isDeliveryValid = orderType === "walkin" || fulfillment === "pickup" || address.trim();
   const canCharge = ticket.length > 0 && isPhoneValid && isDeliveryValid;
 
@@ -68,7 +70,7 @@ export default function PosPage() {
       id: `DD-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: orderType === "walkin" ? "Walk-in Guest" : customerName.trim(),
       customerEmail: "",
-      customerPhone: orderType === "phone" ? customerPhone.trim() : "",
+      customerPhone: customerPhone.trim(),
       fulfillment: orderFulfillment,
       address: orderFulfillment === "delivery" ? address.trim() : null,
       items: ticket.map((t) => ({ itemId: t.id, name: t.name, qty: t.qty, price: t.price })),
@@ -88,8 +90,12 @@ export default function PosPage() {
 
   const commitOrder = (order) => {
     addOrder(order);
-    if (orderType === "phone") {
+    if (order.customerPhone) {
       upsertCustomer({ name: order.customerName, email: "", phone: order.customerPhone, orderTotal: order.total });
+      setSmsToast(
+        `📱 DeepDish: Your order #${order.id.replace("DD-", "")} is in the kitchen! Track your live status here: deepdish.store/pager/${order.id}`
+      );
+      setTimeout(() => setSmsToast(""), 4500);
     }
   };
 
@@ -108,6 +114,7 @@ export default function PosPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-100">
+      <Toast show={!!smsToast} message={smsToast} icon={Smartphone} />
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span
@@ -187,6 +194,19 @@ export default function PosPage() {
                 <PhoneCall size={15} /> Phone Order
               </button>
             </div>
+
+            {orderType === "walkin" && (
+              <div className="space-y-1.5 animate-fade-in">
+                <TextInput
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Customer phone number"
+                />
+                <p className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <Smartphone size={11} /> Used to text them a live pager link — required to charge.
+                </p>
+              </div>
+            )}
 
             {orderType === "phone" && (
               <div className="space-y-2 animate-fade-in">
@@ -275,7 +295,9 @@ export default function PosPage() {
               Charge {formatCurrency(total)}
             </button>
             {ticket.length > 0 && !isPhoneValid && (
-              <p className="text-center text-xs font-semibold text-red-500">Enter name & phone for a phone order</p>
+              <p className="text-center text-xs font-semibold text-red-500">
+                {orderType === "walkin" ? "Enter a phone number for the pager" : "Enter name & phone for a phone order"}
+              </p>
             )}
             {ticket.length > 0 && isPhoneValid && !isDeliveryValid && (
               <p className="text-center text-xs font-semibold text-red-500">Enter a delivery address</p>

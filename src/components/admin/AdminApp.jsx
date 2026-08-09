@@ -7,6 +7,8 @@ import MenuBrandManagerPage from "./MenuBrandManagerPage";
 import CrmPage from "./CrmPage";
 import MarketingPage from "./MarketingPage";
 import DeliveryDispatchPage from "./DeliveryDispatchPage";
+import ReputationPage from "./ReputationPage";
+import PayoutsPage from "./PayoutsPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -23,6 +25,8 @@ export default function AdminApp() {
         <Route path="menu" element={<MenuBrandManagerPage />} />
         <Route path="crm" element={<CrmPage />} />
         <Route path="marketing" element={<MarketingPage />} />
+        <Route path="reputation" element={<ReputationPage />} />
+        <Route path="payouts" element={<PayoutsPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

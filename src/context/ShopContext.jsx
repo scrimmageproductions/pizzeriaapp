@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
 import { uid } from "../utils/helpers";
-import { buildMockCustomers, buildSeedOrders } from "../data/mockCrm";
+import { buildMockCustomers, buildSeedFeedback, buildSeedOrders } from "../data/mockCrm";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -11,7 +11,11 @@ const DEFAULT_STATE = {
   items: [],
   orders: [],
   customers: [],
+  feedback: [], // 1-3 star complaints intercepted before they reach Google (see Reputation dashboard)
+  googleReviewsBoosted: 0,
 };
+
+const LOYALTY_SIGNUP_POINTS = 42;
 
 function init() {
   const persisted = loadState();
@@ -42,6 +46,8 @@ function reducer(state, action) {
         shop,
         orders: buildSeedOrders({ prepMinutes: shop.prepMinutes, items: state.items, shop }),
         customers: buildMockCustomers(),
+        feedback: buildSeedFeedback(),
+        googleReviewsBoosted: 14,
       };
     }
 
@@ -102,11 +108,53 @@ function reducer(state, action) {
       return {
         ...state,
         customers: [
-          { id: uid("cust"), name, email: email || "", phone: phone || "", totalOrders: 1, lifetimeValue: orderTotal, lastOrderAt: Date.now() },
+          {
+            id: uid("cust"),
+            name,
+            email: email || "",
+            phone: phone || "",
+            totalOrders: 1,
+            lifetimeValue: orderTotal,
+            lastOrderAt: Date.now(),
+            accountStatus: "guest", // walk-up/phone orders start as guests until they claim their loyalty points
+            points: 0,
+          },
           ...state.customers,
         ],
       };
     }
+
+    // Pager's loyalty upsell: a guest claims their signup points and becomes a registered member.
+    case "CLAIM_LOYALTY_POINTS":
+      return {
+        ...state,
+        customers: state.customers.map((c) =>
+          c.phone === action.payload.phone && c.accountStatus === "guest"
+            ? { ...c, accountStatus: "registered", points: c.points + LOYALTY_SIGNUP_POINTS }
+            : c
+        ),
+      };
+
+    // Review gating: 4-5 star ratings never touch the inbox, they just bump the public counter.
+    case "SUBMIT_FEEDBACK": {
+      const { orderId, customerName, rating, comment } = action.payload;
+      if (rating >= 4) {
+        return { ...state, googleReviewsBoosted: state.googleReviewsBoosted + 1 };
+      }
+      return {
+        ...state,
+        feedback: [
+          { id: uid("fb"), orderId, customerName, rating, comment: comment || "", createdAt: Date.now(), resolved: false },
+          ...state.feedback,
+        ],
+      };
+    }
+
+    case "RESOLVE_FEEDBACK":
+      return {
+        ...state,
+        feedback: state.feedback.map((f) => (f.id === action.payload.id ? { ...f, resolved: true } : f)),
+      };
 
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
@@ -151,6 +199,10 @@ export function ShopProvider({ children }) {
       assignDriver: (id, driver) => dispatch({ type: "ASSIGN_DRIVER", payload: { id, driver } }),
 
       upsertCustomer: (payload) => dispatch({ type: "UPSERT_CUSTOMER", payload }),
+      claimLoyaltyPoints: (phone) => dispatch({ type: "CLAIM_LOYALTY_POINTS", payload: { phone } }),
+
+      submitFeedback: (payload) => dispatch({ type: "SUBMIT_FEEDBACK", payload }),
+      resolveFeedback: (id) => dispatch({ type: "RESOLVE_FEEDBACK", payload: { id } }),
     }),
     []
   );

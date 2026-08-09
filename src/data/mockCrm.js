@@ -4,15 +4,49 @@
 import { jitterLatLng, uid } from "../utils/helpers";
 
 export const MOCK_CUSTOMERS = [
-  { name: "Maria Gonzalez", email: "maria.g@example.com", phone: "(555) 201-4471", totalOrders: 12, lifetimeValue: 342.5 },
-  { name: "James Whitfield", email: "j.whitfield@example.com", phone: "(555) 887-2039", totalOrders: 7, lifetimeValue: 198.75 },
-  { name: "Priya Natarajan", email: "priya.n@example.com", phone: "(555) 340-9982", totalOrders: 21, lifetimeValue: 611.2 },
-  { name: "Tommy Alessi", email: "tommy.alessi@example.com", phone: "(555) 118-6654", totalOrders: 3, lifetimeValue: 74.85 },
-  { name: "Kayla Brooks", email: "kayla.brooks@example.com", phone: "(555) 552-7710", totalOrders: 9, lifetimeValue: 256.4 },
+  { name: "Maria Gonzalez", email: "maria.g@example.com", phone: "(555) 201-4471", totalOrders: 12, lifetimeValue: 342.5, accountStatus: "registered", points: 380 },
+  { name: "James Whitfield", email: "j.whitfield@example.com", phone: "(555) 887-2039", totalOrders: 7, lifetimeValue: 198.75, accountStatus: "registered", points: 210 },
+  { name: "Priya Natarajan", email: "priya.n@example.com", phone: "(555) 340-9982", totalOrders: 21, lifetimeValue: 611.2, accountStatus: "registered", points: 640 },
+  { name: "Tommy Alessi", email: "tommy.alessi@example.com", phone: "(555) 118-6654", totalOrders: 3, lifetimeValue: 74.85, accountStatus: "guest", points: 0 },
+  { name: "Kayla Brooks", email: "kayla.brooks@example.com", phone: "(555) 552-7710", totalOrders: 9, lifetimeValue: 256.4, accountStatus: "registered", points: 290 },
 ];
 
 export function buildMockCustomers() {
   return MOCK_CUSTOMERS.map((c) => ({ id: uid("cust"), ...c, lastOrderAt: Date.now() - Math.random() * 20 * 86400000 }));
+}
+
+/** A couple of intercepted low-star complaints already sitting in the Reputation inbox on day one. */
+export function buildSeedFeedback() {
+  const now = Date.now();
+  return [
+    {
+      id: uid("fb"),
+      orderId: "DD-2214",
+      customerName: "Derek Simmons",
+      rating: 2,
+      comment: "Pizza showed up lukewarm and the order was missing a side of garlic knots.",
+      createdAt: now - 2 * 86400000,
+      resolved: false,
+    },
+    {
+      id: uid("fb"),
+      orderId: "DD-2198",
+      customerName: "Ana Reyes",
+      rating: 3,
+      comment: "Good flavor but the crust was way too thin and undercooked in the middle.",
+      createdAt: now - 4 * 86400000,
+      resolved: false,
+    },
+    {
+      id: uid("fb"),
+      orderId: "DD-2151",
+      customerName: "Owen Park",
+      rating: 1,
+      comment: "Waited 45 minutes past the quoted pickup time with no update from the counter.",
+      createdAt: now - 6 * 86400000,
+      resolved: true,
+    },
+  ];
 }
 
 /**

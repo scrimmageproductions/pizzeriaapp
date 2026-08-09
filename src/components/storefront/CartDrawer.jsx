@@ -1,10 +1,11 @@
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import Button from "../shared/Button";
+import RedeemRewardsPanel from "./RedeemRewardsPanel";
 
 const TAX_RATE = 0.08;
 
-export default function CartDrawer({ open, onClose, cart, onUpdateQty, onRemove, primaryColor, onCheckout }) {
+export default function CartDrawer({ open, onClose, cart, onUpdateQty, onRemove, primaryColor, onCheckout, customer, redemptionCatalog, onRedeem }) {
   const subtotal = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
@@ -38,28 +39,36 @@ export default function CartDrawer({ open, onClose, cart, onUpdateQty, onRemove,
                 <div key={item.id} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-gray-900">{item.name}</p>
-                    <p className="text-xs text-gray-500">{formatCurrency(item.price)} each</p>
+                    <p className="text-xs text-gray-500">{item.isReward ? "Redeemed with points" : `${formatCurrency(item.price)} each`}</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => onUpdateQty(item.id, item.qty - 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-4 text-center text-sm font-bold">{item.qty}</span>
-                    <button
-                      onClick={() => onUpdateQty(item.id, item.qty + 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
+                  {item.isReward ? (
+                    <span className="rounded-full bg-[#00A651]/10 px-2.5 py-1 text-xs font-bold text-[#00A651]">FREE</span>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onUpdateQty(item.id, item.qty - 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="w-4 text-center text-sm font-bold">{item.qty}</span>
+                      <button
+                        onClick={() => onUpdateQty(item.id, item.qty + 1)}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  )}
                   <button onClick={() => onRemove(item.id)} className="text-gray-300 hover:text-red-500">
                     <Trash2 size={15} />
                   </button>
                 </div>
               ))}
+
+              {customer && (
+                <RedeemRewardsPanel customer={customer} redemptionCatalog={redemptionCatalog} cart={cart} onRedeem={onRedeem} primaryColor={primaryColor} />
+              )}
             </div>
           )}
         </div>

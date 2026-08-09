@@ -1,8 +1,9 @@
-import { Pizza, ShoppingCart } from "lucide-react";
+import { Pizza, ShoppingCart, Star } from "lucide-react";
 import { isShopOpen, formatHour } from "../../utils/helpers";
 
-export default function StorefrontHeader({ shop, cartCount, onOpenCart }) {
+export default function StorefrontHeader({ shop, cartCount, onOpenCart, customer, onSignOut }) {
   const open = isShopOpen(shop.hours);
+  const firstName = customer?.name?.split(" ")[0];
 
   return (
     <header className="border-b border-gray-100 bg-white">
@@ -25,19 +26,47 @@ export default function StorefrontHeader({ shop, cartCount, onOpenCart }) {
           </div>
         </div>
 
-        <button
-          onClick={onOpenCart}
-          className="relative flex h-11 w-11 items-center justify-center rounded-full text-white shadow-sm"
-          style={{ backgroundColor: shop.primaryColor }}
-        >
-          <ShoppingCart size={18} />
-          {cartCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1 text-[11px] font-bold text-white">
-              {cartCount}
-            </span>
+        <div className="flex items-center gap-2.5">
+          {customer && (
+            <div className="hidden flex-col items-end leading-tight sm:flex">
+              <span className="text-xs font-bold text-gray-800">
+                Welcome back, {firstName}! 🌟 {customer.loyaltyPoints || 0} pts
+              </span>
+              {onSignOut && (
+                <button onClick={onSignOut} className="text-[11px] font-semibold text-gray-400 hover:text-gray-600">
+                  Not you? Sign out
+                </button>
+              )}
+            </div>
           )}
-        </button>
+
+          <button
+            onClick={onOpenCart}
+            className="relative flex h-11 w-11 items-center justify-center rounded-full text-white shadow-sm"
+            style={{ backgroundColor: shop.primaryColor }}
+          >
+            <ShoppingCart size={18} />
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gray-900 px-1 text-[11px] font-bold text-white">
+                {cartCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
+
+      {customer && (
+        <div className="flex items-center justify-between border-t border-gray-50 px-4 py-2 sm:hidden">
+          <span className="flex items-center gap-1 text-xs font-bold text-gray-800">
+            <Star size={12} className="fill-[#E31837] text-[#E31837]" /> Welcome back, {firstName}! {customer.loyaltyPoints || 0} pts
+          </span>
+          {onSignOut && (
+            <button onClick={onSignOut} className="text-[11px] font-semibold text-gray-400 hover:text-gray-600">
+              Sign out
+            </button>
+          )}
+        </div>
+      )}
     </header>
   );
 }

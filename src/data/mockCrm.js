@@ -4,15 +4,55 @@
 import { jitterLatLng, uid } from "../utils/helpers";
 
 export const MOCK_CUSTOMERS = [
-  { name: "Maria Gonzalez", email: "maria.g@example.com", phone: "(555) 201-4471", totalOrders: 12, lifetimeValue: 342.5 },
-  { name: "James Whitfield", email: "j.whitfield@example.com", phone: "(555) 887-2039", totalOrders: 7, lifetimeValue: 198.75 },
-  { name: "Priya Natarajan", email: "priya.n@example.com", phone: "(555) 340-9982", totalOrders: 21, lifetimeValue: 611.2 },
-  { name: "Tommy Alessi", email: "tommy.alessi@example.com", phone: "(555) 118-6654", totalOrders: 3, lifetimeValue: 74.85 },
-  { name: "Kayla Brooks", email: "kayla.brooks@example.com", phone: "(555) 552-7710", totalOrders: 9, lifetimeValue: 256.4 },
+  {
+    name: "Maria Gonzalez",
+    email: "maria.g@example.com",
+    phone: "(555) 201-4471",
+    totalOrders: 12,
+    lifetimeValue: 342.5,
+    loyaltyPoints: 150,
+    accountType: "registered",
+  },
+  {
+    name: "James Whitfield",
+    email: "j.whitfield@example.com",
+    phone: "(555) 887-2039",
+    totalOrders: 7,
+    lifetimeValue: 198.75,
+    loyaltyPoints: 85,
+    accountType: "guest",
+  },
+  {
+    name: "Priya Natarajan",
+    email: "priya.n@example.com",
+    phone: "(555) 340-9982",
+    totalOrders: 21,
+    lifetimeValue: 611.2,
+    loyaltyPoints: 520,
+    accountType: "registered",
+  },
+  {
+    name: "Tommy Alessi",
+    email: "tommy.alessi@example.com",
+    phone: "(555) 118-6654",
+    totalOrders: 3,
+    lifetimeValue: 74.85,
+    loyaltyPoints: 30,
+    accountType: "guest",
+  },
+  {
+    name: "Kayla Brooks",
+    email: "kayla.brooks@example.com",
+    phone: "(555) 552-7710",
+    totalOrders: 9,
+    lifetimeValue: 256.4,
+    loyaltyPoints: 110,
+    accountType: "guest",
+  },
 ];
 
 export function buildMockCustomers() {
-  return MOCK_CUSTOMERS.map((c) => ({ id: uid("cust"), ...c, lastOrderAt: Date.now() - Math.random() * 20 * 86400000 }));
+  return MOCK_CUSTOMERS.map((c) => ({ id: uid("cust"), lastAddress: null, ...c, lastOrderAt: Date.now() - Math.random() * 20 * 86400000 }));
 }
 
 /**

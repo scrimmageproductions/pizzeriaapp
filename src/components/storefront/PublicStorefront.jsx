@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { PauseCircle, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { FONT_OPTIONS } from "../../data/brand";
+import { DEFAULT_LOYALTY } from "../../data/loyalty";
 import { jitterLatLng } from "../../utils/helpers";
 import StorefrontHeader from "./StorefrontHeader";
 import MenuList from "./MenuList";
@@ -12,8 +13,8 @@ import OrderTracker from "./OrderTracker";
 
 export default function PublicStorefront() {
   const { slug } = useParams();
-  const { shop, items, orders } = useShopState();
-  const { addOrder, upsertCustomer } = useShopActions();
+  const { shop, items, orders, customers, activeCustomerId } = useShopState();
+  const { addOrder, upsertCustomer, redeemReward, setActiveCustomer } = useShopActions();
 
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -34,6 +35,8 @@ export default function PublicStorefront() {
   }
 
   const activeOrder = orders.find((o) => o.id === activeOrderId);
+  const activeCustomer = activeCustomerId ? customers.find((c) => c.id === activeCustomerId) || null : null;
+  const loyalty = shop.loyalty || DEFAULT_LOYALTY;
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -46,7 +49,25 @@ export default function PublicStorefront() {
 
   const updateQty = (id, qty) =>
     setCart((prev) => (qty <= 0 ? prev.filter((c) => c.id !== id) : prev.map((c) => (c.id === id ? { ...c, qty } : c))));
-  const removeItem = (id) => setCart((prev) => prev.filter((c) => c.id !== id));
+
+  const removeItem = (id) => {
+    const removed = cart.find((c) => c.id === id);
+    if (removed?.isReward && removed.customerId) {
+      redeemReward(removed.customerId, -removed.pointsCost); // refund the points spent on this reward
+    }
+    setCart((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleRedeem = (customer, reward) => {
+    if ((customer.loyaltyPoints || 0) < reward.pointsCost) return;
+    setCart((prev) => [
+      ...prev,
+      { id: `reward_${reward.id}_${Date.now()}`, name: reward.freeItemName, price: 0, qty: 1, isReward: true, rewardId: reward.id, pointsCost: reward.pointsCost, customerId: customer.id },
+    ]);
+    redeemReward(customer.id, reward.pointsCost);
+    setCartOpen(true);
+  };
+
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
   const openCheckout = (totals) => {
@@ -79,7 +100,7 @@ export default function PublicStorefront() {
       lng: destination.lng,
     };
     addOrder(order);
-    upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });
+    upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total, address });
     setActiveOrderId(orderId);
     setCart([]);
     setCheckoutOpen(false);
@@ -93,7 +114,13 @@ export default function PublicStorefront() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]" style={{ fontFamily }}>
-      <StorefrontHeader shop={shop} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
+      <StorefrontHeader
+        shop={shop}
+        cartCount={cartCount}
+        onOpenCart={() => setCartOpen(true)}
+        customer={activeCustomer}
+        onSignOut={() => setActiveCustomer(null)}
+      />
 
       {!shop.acceptingOrders && (
         <div className="mx-auto mt-4 flex max-w-3xl items-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-600">
@@ -117,6 +144,9 @@ export default function PublicStorefront() {
         onRemove={removeItem}
         primaryColor={shop.primaryColor}
         onCheckout={openCheckout}
+        customer={activeCustomer}
+        redemptionCatalog={loyalty.redemptionCatalog}
+        onRedeem={handleRedeem}
       />
 
       <CheckoutModal
@@ -125,6 +155,12 @@ export default function PublicStorefront() {
         totals={checkoutTotals || { subtotal: 0, tax: 0, total: 0 }}
         primaryColor={shop.primaryColor}
         onPlaceOrder={placeOrder}
+        customers={customers}
+        redemptionCatalog={loyalty.redemptionCatalog}
+        pointsPerDollar={loyalty.pointsPerDollar}
+        cart={cart}
+        onRedeem={handleRedeem}
+        activeCustomer={activeCustomer}
       />
     </div>
   );

@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bike, CreditCard, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import Modal from "../shared/Modal";
 import Button from "../shared/Button";
 import { FormField, TextInput } from "../shared/FormField";
+import RedeemRewardsPanel from "./RedeemRewardsPanel";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export default function CheckoutModal({ open, onClose, totals, primaryColor, onPlaceOrder }) {
-  const [customerName, setCustomerName] = useState("");
-  const [email, setEmail] = useState("");
+export default function CheckoutModal({
+  open,
+  onClose,
+  totals,
+  primaryColor,
+  onPlaceOrder,
+  customers,
+  redemptionCatalog,
+  pointsPerDollar,
+  cart,
+  onRedeem,
+  activeCustomer,
+}) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [fulfillment, setFulfillment] = useState("pickup");
   const [address, setAddress] = useState("");
@@ -17,9 +28,23 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
 
+  // Auto-fill for a recognized, logged-in customer so they can check out in two clicks.
+  useEffect(() => {
+    if (!open) return;
+    if (activeCustomer) {
+      const [f, ...rest] = (activeCustomer.name || "").split(" ");
+      setFirstName(f || "");
+      setLastName(rest.join(" "));
+      setPhone(activeCustomer.phone || "");
+      if (activeCustomer.lastAddress) setAddress(activeCustomer.lastAddress);
+    }
+  }, [open, activeCustomer]);
+
+  const matchedCustomer = activeCustomer || customers.find((c) => c.phone && phone.trim() && c.phone === phone.trim());
+
   const canSubmit =
-    customerName.trim() &&
-    EMAIL_RE.test(email.trim()) &&
+    firstName.trim() &&
+    lastName.trim() &&
     phone.trim().length >= 7 &&
     (fulfillment === "pickup" || address.trim()) &&
     cardNumber.replace(/\s/g, "").length >= 12 &&
@@ -30,8 +55,8 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
     e.preventDefault();
     if (!canSubmit) return;
     onPlaceOrder({
-      customerName: customerName.trim(),
-      email: email.trim(),
+      customerName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+      email: "",
       phone: phone.trim(),
       fulfillment,
       address: fulfillment === "delivery" ? address.trim() : null,
@@ -45,21 +70,23 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
       .replace(/(.{4})/g, "$1 ")
       .trim();
 
+  const pointsWouldEarn = Math.floor(totals.total * (pointsPerDollar || 1));
+
   return (
     <Modal open={open} onClose={onClose} title="Checkout">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label="Your Name">
-          <TextInput autoFocus value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Jane Doe" />
-        </FormField>
-
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Email">
-            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jane@example.com" />
+          <FormField label="First Name">
+            <TextInput autoFocus value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" />
           </FormField>
-          <FormField label="Phone">
-            <TextInput type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+          <FormField label="Last Name">
+            <TextInput value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
           </FormField>
         </div>
+
+        <FormField label="Phone Number">
+          <TextInput type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
+        </FormField>
 
         <FormField label="Order Type">
           <div className="grid grid-cols-2 gap-2">
@@ -90,6 +117,10 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
           <FormField label="Delivery Address">
             <TextInput value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Apt 4B" />
           </FormField>
+        )}
+
+        {matchedCustomer && (
+          <RedeemRewardsPanel customer={matchedCustomer} redemptionCatalog={redemptionCatalog} cart={cart} onRedeem={onRedeem} primaryColor={primaryColor} />
         )}
 
         <div className="space-y-3 border-t border-gray-100 pt-4">
@@ -132,6 +163,14 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
             <span>Total</span>
             <span>{formatCurrency(totals.total)}</span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-[#7C3AED]/10 to-[#E31837]/10 px-4 py-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-lg">🎁</span>
+          <p className="text-xs font-bold text-gray-800">
+            You could earn <span className="text-[#E31837]">{pointsWouldEarn} Slice Points</span> on this order! Create an account after
+            checkout to save them for free Garlic Knots.
+          </p>
         </div>
 
         <Button type="submit" size="lg" className="w-full" style={{ backgroundColor: primaryColor }} disabled={!canSubmit}>

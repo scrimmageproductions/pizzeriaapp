@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, Bike, LayoutGrid, Megaphone, Menu, Package, Palette, Pizza, Printer, Store, Tablet, Users, X } from "lucide-react";
+import { Ban, Bike, CreditCard, LayoutGrid, Megaphone, Menu, Package, Palette, Pizza, Printer, Store, Tablet, Users, X } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
   { to: "/admin/printers", label: "🖨️ Hardware & Printers", icon: Printer },
+  { to: "/admin/billing", label: "💳 Billing & Domains", icon: CreditCard },
 ];
 
 export default function AdminLayout({ children }) {
@@ -67,7 +68,18 @@ export default function AdminLayout({ children }) {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-white">{shop.name}</p>
-            <p className="truncate text-xs text-white/50">deepdish.store/{shop.slug}</p>
+            {shop.billing?.domainVerified && shop.billing?.customDomainUrl ? (
+              <a
+                href={`https://${shop.billing.customDomainUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-xs text-[#00A651] underline decoration-dotted hover:text-[#00c25f]"
+              >
+                {shop.billing.customDomainUrl}
+              </a>
+            ) : (
+              <p className="truncate text-xs text-white/50">deepdish.store/{shop.slug}</p>
+            )}
           </div>
         </div>
 

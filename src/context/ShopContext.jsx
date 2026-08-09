@@ -3,6 +3,7 @@ import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
 import { getOrderTiming, uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedOrders } from "../data/mockCrm";
 import { buildAgentLogEntry, computeDeductions, INGREDIENT_SEED, SUPPLIER_SEED } from "../data/inventory";
+import { DEFAULT_BILLING, DEFAULT_LOYALTY, DEFAULT_RECOVERED_SALES } from "../data/loyalty";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -16,6 +17,7 @@ const DEFAULT_STATE = {
   suppliers: SUPPLIER_SEED,
   agentActivityLog: [],
   printEvents: [],
+  activeCustomerId: null, // the storefront visitor currently "logged in" in this browser, if any
 };
 
 function init() {
@@ -39,6 +41,9 @@ function reducer(state, action) {
         winBackSmsEnabled: true,
         abandonedCartSmsEnabled: false,
         printer: { connected: false, deviceName: null, autoPrintOnReady: false },
+        loyalty: DEFAULT_LOYALTY,
+        billing: DEFAULT_BILLING,
+        recoveredSales: DEFAULT_RECOVERED_SALES,
         lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
         lng: -73.9442,
         createdAt: Date.now(),
@@ -134,10 +139,13 @@ function reducer(state, action) {
     }
 
     case "UPSERT_CUSTOMER": {
-      const { name, email, phone, orderTotal } = action.payload;
+      const { name, email, phone, orderTotal, address } = action.payload;
       const emailKey = email?.trim().toLowerCase();
       const phoneKey = phone?.trim();
       if (!emailKey && !phoneKey) return state; // no identifying info (e.g. an anonymous walk-in) — nothing to record
+
+      const pointsPerDollar = state.shop?.loyalty?.pointsPerDollar ?? DEFAULT_LOYALTY.pointsPerDollar;
+      const pointsEarned = Math.floor(orderTotal * pointsPerDollar);
 
       const existing = state.customers.find(
         (c) => (emailKey && c.email?.toLowerCase() === emailKey) || (phoneKey && c.phone === phoneKey)
@@ -147,7 +155,14 @@ function reducer(state, action) {
           ...state,
           customers: state.customers.map((c) =>
             c.id === existing.id
-              ? { ...c, totalOrders: c.totalOrders + 1, lifetimeValue: c.lifetimeValue + orderTotal, lastOrderAt: Date.now() }
+              ? {
+                  ...c,
+                  totalOrders: c.totalOrders + 1,
+                  lifetimeValue: c.lifetimeValue + orderTotal,
+                  loyaltyPoints: (c.loyaltyPoints || 0) + pointsEarned,
+                  lastAddress: address || c.lastAddress || null,
+                  lastOrderAt: Date.now(),
+                }
               : c
           ),
         };
@@ -155,11 +170,54 @@ function reducer(state, action) {
       return {
         ...state,
         customers: [
-          { id: uid("cust"), name, email: email || "", phone: phone || "", totalOrders: 1, lifetimeValue: orderTotal, lastOrderAt: Date.now() },
+          {
+            id: uid("cust"),
+            name,
+            email: email || "",
+            phone: phone || "",
+            totalOrders: 1,
+            lifetimeValue: orderTotal,
+            loyaltyPoints: pointsEarned,
+            accountType: "guest",
+            lastAddress: address || null,
+            lastOrderAt: Date.now(),
+          },
           ...state.customers,
         ],
       };
     }
+
+    case "UPDATE_LOYALTY_SETTINGS":
+      return {
+        ...state,
+        shop: state.shop ? { ...state.shop, loyalty: { ...(state.shop.loyalty || DEFAULT_LOYALTY), ...action.payload } } : state.shop,
+      };
+
+    case "ADJUST_CUSTOMER_POINTS":
+      return {
+        ...state,
+        customers: state.customers.map((c) =>
+          c.id === action.payload.customerId ? { ...c, loyaltyPoints: Math.max(0, (c.loyaltyPoints || 0) + action.payload.delta) } : c
+        ),
+      };
+
+    case "REDEEM_REWARD":
+      return {
+        ...state,
+        customers: state.customers.map((c) =>
+          c.id === action.payload.customerId ? { ...c, loyaltyPoints: Math.max(0, (c.loyaltyPoints || 0) - action.payload.pointsCost) } : c
+        ),
+      };
+
+    case "REGISTER_CUSTOMER_ACCOUNT":
+      return {
+        ...state,
+        customers: state.customers.map((c) => (c.id === action.payload.customerId ? { ...c, accountType: "registered" } : c)),
+        activeCustomerId: action.payload.customerId,
+      };
+
+    case "SET_ACTIVE_CUSTOMER":
+      return { ...state, activeCustomerId: action.payload.customerId };
 
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
@@ -233,6 +291,12 @@ export function ShopProvider({ children }) {
       addSupplier: (payload) => dispatch({ type: "ADD_SUPPLIER", payload }),
       updateIngredient: (id, changes) => dispatch({ type: "UPDATE_INGREDIENT", payload: { id, changes } }),
       addPrintEvent: (message, orderId = null) => dispatch({ type: "ADD_PRINT_EVENT", payload: { message, orderId } }),
+
+      updateLoyaltySettings: (payload) => dispatch({ type: "UPDATE_LOYALTY_SETTINGS", payload }),
+      adjustCustomerPoints: (customerId, delta) => dispatch({ type: "ADJUST_CUSTOMER_POINTS", payload: { customerId, delta } }),
+      redeemReward: (customerId, pointsCost) => dispatch({ type: "REDEEM_REWARD", payload: { customerId, pointsCost } }),
+      registerCustomerAccount: (customerId) => dispatch({ type: "REGISTER_CUSTOMER_ACCOUNT", payload: { customerId } }),
+      setActiveCustomer: (customerId) => dispatch({ type: "SET_ACTIVE_CUSTOMER", payload: { customerId } }),
     }),
     []
   );

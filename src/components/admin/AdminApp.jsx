@@ -9,6 +9,7 @@ import MarketingPage from "./MarketingPage";
 import DeliveryDispatchPage from "./DeliveryDispatchPage";
 import InventoryPage from "./InventoryPage";
 import PrinterSettingsPage from "./PrinterSettingsPage";
+import BillingPage from "./BillingPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -27,6 +28,7 @@ export default function AdminApp() {
         <Route path="crm" element={<CrmPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="printers" element={<PrinterSettingsPage />} />
+        <Route path="billing" element={<BillingPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

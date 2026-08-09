@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
@@ -15,11 +15,16 @@ const STEPS = ["Claim Shop", "Branding", "Menu", "Launch"];
 
 export default function OnboardingWizard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { items } = useShopState();
   const { completeOnboarding, importScannedItems } = useShopActions();
 
-  const [stepIndex, setStepIndex] = useState(0);
-  const [name, setName] = useState("");
+  // The landing page's inline "Generate Store" input hands off the pizzeria name here so step
+  // one (Claim Shop) arrives already completed instead of asking the owner to retype it.
+  const initialName = location.state?.initialName || "";
+
+  const [stepIndex, setStepIndex] = useState(initialName ? 1 : 0);
+  const [name, setName] = useState(initialName);
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#E31837");
   const [toast, setToast] = useState("");

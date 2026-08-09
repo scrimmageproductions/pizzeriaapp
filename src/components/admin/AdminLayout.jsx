@@ -1,6 +1,23 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, Bike, Landmark, LayoutGrid, Megaphone, Menu, Palette, Pizza, Settings, Star, Store, Tablet, Users, X } from "lucide-react";
+import {
+  Ban,
+  Bike,
+  CalendarClock,
+  Landmark,
+  LayoutGrid,
+  Megaphone,
+  Menu,
+  Palette,
+  Pizza,
+  Settings,
+  Sparkles,
+  Star,
+  Store,
+  Tablet,
+  Users,
+  X,
+} from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
@@ -8,9 +25,11 @@ const NAV_ITEMS = [
   { to: "/admin/kds", label: "Live Order KDS", icon: LayoutGrid },
   { to: "/admin/pos", label: "Tablet POS", icon: Tablet },
   { to: "/admin/delivery", label: "Delivery Dispatch", icon: Bike },
+  { to: "/admin/catering", label: "Catering & Events", icon: CalendarClock },
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
+  { to: "/admin/marketing/social", label: "Social Studio", icon: Sparkles },
   { to: "/admin/reputation", label: "Reputation", icon: Star },
   { to: "/admin/payouts", label: "Bank & Payouts", icon: Landmark },
   { to: "/admin/settings/data", label: "Settings", icon: Settings },

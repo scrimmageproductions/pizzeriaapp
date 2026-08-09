@@ -10,6 +10,8 @@ import DeliveryDispatchPage from "./DeliveryDispatchPage";
 import ReputationPage from "./ReputationPage";
 import PayoutsPage from "./PayoutsPage";
 import DataMigrationPage from "./DataMigrationPage";
+import CateringPage from "./CateringPage";
+import SocialStudioPage from "./SocialStudioPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -26,6 +28,8 @@ export default function AdminApp() {
         <Route path="menu" element={<MenuBrandManagerPage />} />
         <Route path="crm" element={<CrmPage />} />
         <Route path="marketing" element={<MarketingPage />} />
+        <Route path="marketing/social" element={<SocialStudioPage />} />
+        <Route path="catering" element={<CateringPage />} />
         <Route path="reputation" element={<ReputationPage />} />
         <Route path="payouts" element={<PayoutsPage />} />
         <Route path="settings/data" element={<DataMigrationPage />} />

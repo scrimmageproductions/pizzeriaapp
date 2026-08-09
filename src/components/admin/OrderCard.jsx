@@ -1,8 +1,8 @@
-import { Bike, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
+import { Bike, CalendarClock, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
 import { useShopActions } from "../../context/ShopContext";
 import Button from "../shared/Button";
 import ProgressRing from "../shared/ProgressRing";
-import { formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
+import { formatClockTime, formatCountdown, formatCurrency, getOrderTiming } from "../../utils/helpers";
 
 export default function OrderCard({ order, now, accentColor }) {
   const { completeOrder } = useShopActions();
@@ -10,7 +10,16 @@ export default function OrderCard({ order, now, accentColor }) {
   const { stageIndex, prepProgress, secondsUntilReady } = timing;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+    <div
+      className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md ${
+        order.isCatering ? "border-purple-300 ring-1 ring-purple-200" : "border-gray-200"
+      }`}
+    >
+      {order.isCatering && (
+        <div className="mb-3 flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-2 py-2 text-center text-xs font-extrabold uppercase tracking-wide text-white">
+          <CalendarClock size={13} /> Catering — Due at {formatClockTime(order.eventAt)}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-extrabold text-gray-900">{order.id}</p>

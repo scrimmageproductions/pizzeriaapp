@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { Banknote, CheckCircle2, QrCode, X } from "lucide-react";
+import { Banknote, CheckCircle2, QrCode, WifiOff, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { formatCurrency } from "../../utils/helpers";
 import Button from "../shared/Button";
 
 const QUICK_CASH_STEPS = [0, 5, 10, 20];
 
-export default function PosPaymentModal({ open, onClose, total, primaryColor, orders, onCashCharge, onQrCharge, onConfirmPaid, onFinish }) {
+export default function PosPaymentModal({
+  open,
+  onClose,
+  total,
+  primaryColor,
+  orders,
+  isOffline,
+  onCashCharge,
+  onQrCharge,
+  onConfirmPaid,
+  onFinish,
+}) {
   const [method, setMethod] = useState(null); // null | 'cash' | 'qr'
   const [tendered, setTendered] = useState("");
   const [cashDone, setCashDone] = useState(false);
@@ -74,13 +85,17 @@ export default function PosPaymentModal({ open, onClose, total, primaryColor, or
                 </button>
                 <button
                   onClick={startQr}
-                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-gray-200 py-6 transition hover:border-[#0EA5E9] hover:bg-[#0EA5E9]/5"
+                  disabled={isOffline}
+                  className="flex flex-col items-center gap-2 rounded-2xl border-2 border-gray-200 py-6 transition hover:border-[#0EA5E9] hover:bg-[#0EA5E9]/5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
                 >
-                  <QrCode size={30} className="text-[#0EA5E9]" />
+                  {isOffline ? <WifiOff size={30} className="text-gray-300" /> : <QrCode size={30} className="text-[#0EA5E9]" />}
                   <span className="text-sm font-bold text-gray-800">Scan & Pay</span>
+                  {isOffline && <span className="text-[10px] font-semibold text-gray-400">Needs internet</span>}
                 </button>
               </div>
-              <p className="text-center text-xs text-gray-400">No card reader required for either option.</p>
+              <p className="text-center text-xs text-gray-400">
+                {isOffline ? "You're offline — cash sales still ring up and queue instantly." : "No card reader required for either option."}
+              </p>
             </div>
           )}
 

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bike, Minus, PhoneCall, Pizza, Plus, Smartphone, ShoppingBag, Trash2, UserRound } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Bike, CheckCircle2, Minus, PhoneCall, Pizza, Plus, Smartphone, ShoppingBag, Trash2, UserRound } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
+import { useNetworkStatus } from "../../utils/useNetworkStatus";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
@@ -19,9 +21,11 @@ const CATEGORY_STYLES = {
 const FALLBACK_STYLE = "bg-gray-500 hover:bg-gray-600";
 
 export default function PosPage() {
-  const { shop, items, orders } = useShopState();
-  const { addOrder, upsertCustomer, markOrderPaid } = useShopActions();
+  const { shop, items, orders, offlineOrderQueue } = useShopState();
+  const { addOrder, upsertCustomer, markOrderPaid, enqueueOfflineOrder, syncOfflineQueue } = useShopActions();
   const navigate = useNavigate();
+  const isOnline = useNetworkStatus();
+  const wasOnline = useRef(isOnline);
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
   const [ticket, setTicket] = useState([]);
@@ -31,7 +35,27 @@ export default function PosPage() {
   const [fulfillment, setFulfillment] = useState("pickup");
   const [address, setAddress] = useState("");
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [smsToast, setSmsToast] = useState("");
+  // A single toast slot — the SMS-sent and offline-sync notices share it so they never stack on top of each other.
+  const [toast, setToast] = useState({ message: "", icon: Smartphone });
+
+  const showToast = (message, icon = Smartphone) => {
+    setToast({ message, icon });
+    setTimeout(() => setToast((t) => (t.message === message ? { ...t, message: "" } : t)), 4500);
+  };
+
+  // Auto-sync: the instant connectivity returns, push every queued offline order and say so.
+  useEffect(() => {
+    if (isOnline && !wasOnline.current && offlineOrderQueue.length > 0) {
+      const count = offlineOrderQueue.length;
+      const timeout = setTimeout(() => {
+        syncOfflineQueue();
+        showToast(`Synced ${count} offline order${count === 1 ? "" : "s"} successfully!`, CheckCircle2);
+      }, 900); // brief delay to simulate the push to the backend/Stripe
+      wasOnline.current = isOnline;
+      return () => clearTimeout(timeout);
+    }
+    wasOnline.current = isOnline;
+  }, [isOnline, offlineOrderQueue.length, syncOfflineQueue]);
 
   if (!shop) return <Navigate to="/onboarding" replace />;
 
@@ -90,12 +114,12 @@ export default function PosPage() {
 
   const commitOrder = (order) => {
     addOrder(order);
+    if (!isOnline) enqueueOfflineOrder(order.id); // no network error, no dropped sale — just queue it and keep cooking
     if (order.customerPhone) {
       upsertCustomer({ name: order.customerName, email: "", phone: order.customerPhone, orderTotal: order.total });
-      setSmsToast(
+      showToast(
         `📱 DeepDish: Your order #${order.id.replace("DD-", "")} is in the kitchen! Track your live status here: deepdish.store/pager/${order.id}`
       );
-      setTimeout(() => setSmsToast(""), 4500);
     }
   };
 
@@ -114,7 +138,7 @@ export default function PosPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-100">
-      <Toast show={!!smsToast} message={smsToast} icon={Smartphone} />
+      <Toast show={!!toast.message} message={toast.message} icon={toast.icon} />
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span
@@ -128,6 +152,24 @@ export default function PosPage() {
             <p className="text-xs leading-tight text-gray-400">Tablet POS</p>
           </div>
         </div>
+
+        <motion.div
+          key={isOnline ? "online" : "offline"}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            isOnline ? "bg-[#00A651]/10 text-[#00A651]" : "bg-[#E31837]/10 text-[#E31837]"
+          }`}
+        >
+          <motion.span
+            animate={isOnline ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+            transition={{ duration: 1.6, repeat: isOnline ? Infinity : 0, ease: "easeInOut" }}
+            className={`h-2 w-2 rounded-full ${isOnline ? "bg-[#00A651]" : "bg-[#E31837]"}`}
+          />
+          {isOnline ? "Online — Auto-syncing" : "Offline Mode — Queueing orders locally"}
+        </motion.div>
+
         <button
           onClick={() => navigate("/admin")}
           className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
@@ -312,6 +354,7 @@ export default function PosPage() {
         total={total}
         primaryColor={shop.primaryColor}
         orders={orders}
+        isOffline={!isOnline}
         onCashCharge={handleCashCharge}
         onQrCharge={handleQrCharge}
         onConfirmPaid={markOrderPaid}

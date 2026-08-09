@@ -17,9 +17,12 @@ const DEFAULT_STATE = {
   inventory: [],
   shiftReports: [],
   driverCashouts: [],
+  offlineOrderQueue: [], // order ids taken while offline, waiting to sync once connectivity returns
+  scheduledOrders: [], // catering/pre-orders held back from the KDS until 2 hours before the event
 };
 
 const LOYALTY_SIGNUP_POINTS = 42;
+const CATERING_KITCHEN_ALERT_MS = 2 * 60 * 60 * 1000; // catering orders join the live KDS queue 2 hours before the event
 
 function init() {
   const persisted = loadState();
@@ -186,6 +189,60 @@ function reducer(state, action) {
         ],
       };
 
+    // Festival-Proof Offline POS: an order taken with no connectivity still hits the KDS instantly;
+    // its id just also lands in the queue so we know to "sync" it once we're back online.
+    case "ENQUEUE_OFFLINE_ORDER":
+      return { ...state, offlineOrderQueue: [...state.offlineOrderQueue, action.payload.orderId] };
+
+    case "SYNC_OFFLINE_QUEUE": {
+      if (state.offlineOrderQueue.length === 0) return state;
+      const queued = new Set(state.offlineOrderQueue);
+      return {
+        ...state,
+        orders: state.orders.map((o) => (queued.has(o.id) ? { ...o, synced: true } : o)),
+        offlineOrderQueue: [],
+      };
+    }
+
+    // Catering & Pre-Order Engine.
+    case "ADD_SCHEDULED_ORDER":
+      return { ...state, scheduledOrders: [action.payload, ...state.scheduledOrders] };
+
+    // Ticked periodically from ShopProvider — promotes any catering order within 2 hours of its
+    // event straight into the live KDS queue with an `isCatering` badge, no manual step needed.
+    case "TICK_PROMOTE_SCHEDULED": {
+      if (!state.shop || state.scheduledOrders.length === 0) return state;
+      const now = Date.now();
+      const due = state.scheduledOrders.filter((s) => s.eventAt - now <= CATERING_KITCHEN_ALERT_MS);
+      if (due.length === 0) return state;
+
+      const stillScheduled = state.scheduledOrders.filter((s) => s.eventAt - now > CATERING_KITCHEN_ALERT_MS);
+      const promoted = due.map((s) => ({
+        id: s.id,
+        customerName: s.customerName,
+        customerEmail: s.customerEmail,
+        customerPhone: "",
+        fulfillment: "pickup",
+        address: null,
+        items: s.items,
+        total: s.total,
+        createdAt: now,
+        prepMinutes: Math.max(state.shop.prepMinutes, 45), // catering batches need more than a standard single-order prep window
+        completedAt: null,
+        source: "catering",
+        paymentMethod: "invoice",
+        paidAt: s.createdAt, // the 50% deposit was already "collected" when the invoice was sent
+        assignedDriver: null,
+        dispatchedAt: null,
+        lat: null,
+        lng: null,
+        isCatering: true,
+        eventAt: s.eventAt,
+      }));
+
+      return { ...state, orders: [...promoted, ...state.orders], scheduledOrders: stillScheduled };
+    }
+
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
 
@@ -213,6 +270,13 @@ export function ShopProvider({ children }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  // Runs regardless of which admin page is open, so a catering order crosses into the live KDS
+  // queue on schedule even if nobody is looking at the Catering tab when the 2-hour mark hits.
+  useEffect(() => {
+    const id = setInterval(() => dispatch({ type: "TICK_PROMOTE_SCHEDULED" }), 15000);
+    return () => clearInterval(id);
+  }, []);
+
   const actions = useMemo(
     () => ({
       completeOnboarding: (payload) => dispatch({ type: "COMPLETE_ONBOARDING", payload }),
@@ -236,6 +300,11 @@ export function ShopProvider({ children }) {
 
       importInventory: (items) => dispatch({ type: "IMPORT_INVENTORY", payload: { items } }),
       importCustomers: (customers) => dispatch({ type: "IMPORT_CUSTOMERS", payload: { customers } }),
+
+      enqueueOfflineOrder: (orderId) => dispatch({ type: "ENQUEUE_OFFLINE_ORDER", payload: { orderId } }),
+      syncOfflineQueue: () => dispatch({ type: "SYNC_OFFLINE_QUEUE" }),
+
+      addScheduledOrder: (order) => dispatch({ type: "ADD_SCHEDULED_ORDER", payload: order }),
     }),
     []
   );

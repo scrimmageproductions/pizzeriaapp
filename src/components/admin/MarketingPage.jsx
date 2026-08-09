@@ -1,7 +1,9 @@
-import { MessageSquareText, Sparkles, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, MessageSquareText, Sparkles, TrendingUp } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { formatCurrency } from "../../utils/helpers";
 import Card from "../shared/Card";
+import Button from "../shared/Button";
 import Toggle from "../shared/Toggle";
 
 const RECOVERED_SALES = 320;
@@ -9,6 +11,7 @@ const RECOVERED_SALES = 320;
 export default function MarketingPage() {
   const { shop } = useShopState();
   const { updateShop } = useShopActions();
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -29,6 +32,23 @@ export default function MarketingPage() {
           </div>
         </div>
       </div>
+
+      <Card>
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E31837]/10 text-[#E31837]">
+              <Sparkles size={20} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-gray-900">🎨 Social Studio</p>
+              <p className="mt-0.5 text-sm text-gray-500">Turn any menu item into on-brand Instagram assets in one click.</p>
+            </div>
+          </div>
+          <Button icon={ArrowRight} onClick={() => navigate("/admin/marketing/social")} className="w-full sm:w-auto">
+            Open Social Studio
+          </Button>
+        </div>
+      </Card>
 
       <Card
         title="30-Day Win-Back SMS"

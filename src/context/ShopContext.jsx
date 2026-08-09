@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer } from "react
 import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
 import { uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedFeedback, buildSeedOrders } from "../data/mockCrm";
+import { buildSeedPayroll } from "../data/mockPayroll";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -13,6 +14,9 @@ const DEFAULT_STATE = {
   customers: [],
   feedback: [], // 1-3 star complaints intercepted before they reach Google (see Reputation dashboard)
   googleReviewsBoosted: 0,
+  inventory: [],
+  shiftReports: [],
+  driverCashouts: [],
 };
 
 const LOYALTY_SIGNUP_POINTS = 42;
@@ -41,6 +45,7 @@ function reducer(state, action) {
         lng: -73.9442,
         createdAt: Date.now(),
       };
+      const { shiftReports, driverCashouts } = buildSeedPayroll();
       return {
         ...state,
         shop,
@@ -48,6 +53,8 @@ function reducer(state, action) {
         customers: buildMockCustomers(),
         feedback: buildSeedFeedback(),
         googleReviewsBoosted: 14,
+        shiftReports,
+        driverCashouts,
       };
     }
 
@@ -156,6 +163,29 @@ function reducer(state, action) {
         feedback: state.feedback.map((f) => (f.id === action.payload.id ? { ...f, resolved: true } : f)),
       };
 
+    // Data Migration Hub: bulk CSV imports.
+    case "IMPORT_INVENTORY":
+      return { ...state, inventory: [...state.inventory, ...action.payload.items.map((i) => ({ id: uid("inv"), ...i }))] };
+
+    case "IMPORT_CUSTOMERS":
+      return {
+        ...state,
+        customers: [
+          ...action.payload.customers.map((c) => ({
+            id: uid("cust"),
+            name: c.name,
+            email: c.email || "",
+            phone: c.phone || "",
+            totalOrders: c.totalOrders || 0,
+            lifetimeValue: 0,
+            lastOrderAt: Date.now(),
+            accountStatus: "registered", // migrated-in customers already have a relationship with the shop, not a walk-up guest
+            points: 0,
+          })),
+          ...state.customers,
+        ],
+      };
+
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
 
@@ -203,6 +233,9 @@ export function ShopProvider({ children }) {
 
       submitFeedback: (payload) => dispatch({ type: "SUBMIT_FEEDBACK", payload }),
       resolveFeedback: (id) => dispatch({ type: "RESOLVE_FEEDBACK", payload: { id } }),
+
+      importInventory: (items) => dispatch({ type: "IMPORT_INVENTORY", payload: { items } }),
+      importCustomers: (customers) => dispatch({ type: "IMPORT_CUSTOMERS", payload: { customers } }),
     }),
     []
   );

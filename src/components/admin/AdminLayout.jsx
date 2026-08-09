@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Ban, Bike, Landmark, LayoutGrid, Megaphone, Menu, Palette, Pizza, Star, Store, Tablet, Users, X } from "lucide-react";
+import { Ban, Bike, Landmark, LayoutGrid, Megaphone, Menu, Palette, Pizza, Settings, Star, Store, Tablet, Users, X } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
   { to: "/admin/reputation", label: "Reputation", icon: Star },
   { to: "/admin/payouts", label: "Bank & Payouts", icon: Landmark },
+  { to: "/admin/settings/data", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }) {

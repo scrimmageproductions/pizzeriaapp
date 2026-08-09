@@ -7,6 +7,7 @@ import AdminApp from "./components/admin/AdminApp";
 import PosPage from "./components/admin/PosPage";
 import PublicStorefront from "./components/storefront/PublicStorefront";
 import PayOrderPage from "./components/payment/PayOrderPage";
+import SplitPayPage from "./components/payment/SplitPayPage";
 import PagerPage from "./components/pager/PagerPage";
 import FeedbackPage from "./components/feedback/FeedbackPage";
 
@@ -22,6 +23,7 @@ function App() {
             <Route path="/admin/pos" element={<PosPage />} />
             <Route path="/admin/*" element={<AdminApp />} />
             <Route path="/pay/:orderId" element={<PayOrderPage />} />
+            <Route path="/split/:orderId" element={<SplitPayPage />} />
             <Route path="/pager/:orderId" element={<PagerPage />} />
             <Route path="/feedback/:orderId" element={<FeedbackPage />} />
             <Route path="/:slug" element={<PublicStorefront />} />

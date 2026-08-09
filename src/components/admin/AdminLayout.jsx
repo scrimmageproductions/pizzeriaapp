@@ -11,6 +11,7 @@ import {
   LayoutGrid,
   Megaphone,
   Menu,
+  MessageSquareText,
   Palette,
   Pizza,
   Settings,
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/brands", label: "Virtual Brands", icon: ChefHat },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
+  { to: "/admin/inbox", label: "Inbox", icon: MessageSquareText },
   { to: "/admin/marketing", label: "Automated Marketing", icon: Megaphone },
   { to: "/admin/marketing/social", label: "Social Studio", icon: Sparkles },
   { to: "/admin/marketing/subscriptions", label: "Subscriptions", icon: Crown },
@@ -44,7 +46,7 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout({ children }) {
-  const { shop, orders } = useShopState();
+  const { shop, orders, conversations } = useShopState();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -59,6 +61,7 @@ export default function AdminLayout({ children }) {
   }, [location.pathname]);
 
   const activeOrderCount = orders.filter((o) => !o.completedAt).length;
+  const unreadConversationCount = conversations.filter((c) => c.unread).length;
 
   return (
     <div className="theme-transition flex min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
@@ -124,21 +127,25 @@ export default function AdminLayout({ children }) {
                   }`
                 }
               >
-                {({ isActive }) => (
-                  <>
-                    <Icon size={18} />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {item.to === "/admin/kds" && activeOrderCount > 0 && (
-                      <span
-                        className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold ${
-                          isActive ? "bg-white text-[#E31837]" : "bg-[#E31837] text-white"
-                        }`}
-                      >
-                        {activeOrderCount}
-                      </span>
-                    )}
-                  </>
-                )}
+                {({ isActive }) => {
+                  const badgeCount =
+                    item.to === "/admin/kds" ? activeOrderCount : item.to === "/admin/inbox" ? unreadConversationCount : 0;
+                  return (
+                    <>
+                      <Icon size={18} />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {badgeCount > 0 && (
+                        <span
+                          className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold ${
+                            isActive ? "bg-white text-[#E31837]" : "bg-[#E31837] text-white"
+                          }`}
+                        >
+                          {badgeCount}
+                        </span>
+                      )}
+                    </>
+                  );
+                }}
               </NavLink>
             );
           })}

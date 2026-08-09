@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
 import { slugify, uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedFeedback, buildSeedOrders } from "../data/mockCrm";
@@ -21,10 +21,21 @@ const DEFAULT_STATE = {
   scheduledOrders: [], // catering/pre-orders held back from the KDS until 2 hours before the event
   brands: [], // additional Ghost Kitchen virtual brands sharing this kitchen's menu, each with its own storefront URL
   subscriptionPlan: null, // the shop's single active VIP subscription plan, if any
+  conversations: [], // Unified SMS Inbox — one thread per customer phone number
 };
 
 const LOYALTY_SIGNUP_POINTS = 42;
 const CATERING_KITCHEN_ALERT_MS = 2 * 60 * 60 * 1000; // catering orders join the live KDS queue 2 hours before the event
+
+// A customer text arrives a little while after they order — gives the Inbox something real to
+// show and lets the POS/KDS toast demo itself without any manual setup.
+const MOCK_INBOUND_TEXTS = [
+  "Hey, can you make sure there's no onions on mine?",
+  "Is my order almost ready?",
+  "Can I add extra ranch on the side?",
+  "Do you have gluten-free crust available today?",
+  "Can you toss in some extra napkins please?",
+];
 
 function init() {
   const persisted = loadState();
@@ -97,6 +108,21 @@ function reducer(state, action) {
           o.id === action.payload.id ? { ...o, assignedDriver: action.payload.driver, dispatchedAt: Date.now() } : o
         ),
       };
+
+    // QR Dine-In Split Pay: each portion paid via a friend's stripped-down checkout accumulates
+    // here; the order flips to paid the instant the running total covers the bill.
+    case "PAY_SPLIT_PORTION": {
+      const { id, amount } = action.payload;
+      return {
+        ...state,
+        orders: state.orders.map((o) => {
+          if (o.id !== id) return o;
+          const splitPaidTotal = Math.min(o.total, (o.splitPaidTotal || 0) + amount);
+          const isFullyPaid = splitPaidTotal >= o.total - 0.005;
+          return { ...o, splitPaidTotal, paidAt: isFullyPaid ? o.paidAt || Date.now() : o.paidAt };
+        }),
+      };
+    }
 
     case "UPSERT_CUSTOMER": {
       const { name, email, phone, orderTotal } = action.payload;
@@ -302,6 +328,47 @@ function reducer(state, action) {
       };
     }
 
+    // Unified SMS Inbox: one thread per phone number, shared by every order that customer places.
+    case "RECEIVE_MESSAGE": {
+      const { customerName, customerPhone, orderId, text } = action.payload;
+      const msg = { id: uid("msg"), sender: "customer", text, createdAt: Date.now() };
+      const existing = state.conversations.find((c) => c.customerPhone === customerPhone);
+      if (existing) {
+        return {
+          ...state,
+          conversations: state.conversations.map((c) =>
+            c.id === existing.id
+              ? { ...c, orderId: orderId || c.orderId, messages: [...c.messages, msg], lastMessageAt: msg.createdAt, unread: true }
+              : c
+          ),
+        };
+      }
+      return {
+        ...state,
+        conversations: [
+          { id: uid("conv"), customerName, customerPhone, orderId: orderId || null, messages: [msg], lastMessageAt: msg.createdAt, unread: true },
+          ...state.conversations,
+        ],
+      };
+    }
+
+    case "SEND_MESSAGE": {
+      const { conversationId, text } = action.payload;
+      const msg = { id: uid("msg"), sender: "shop", text, createdAt: Date.now() };
+      return {
+        ...state,
+        conversations: state.conversations.map((c) =>
+          c.id === conversationId ? { ...c, messages: [...c.messages, msg], lastMessageAt: msg.createdAt } : c
+        ),
+      };
+    }
+
+    case "MARK_CONVERSATION_READ":
+      return {
+        ...state,
+        conversations: state.conversations.map((c) => (c.id === action.payload.id ? { ...c, unread: false } : c)),
+      };
+
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
 
@@ -336,6 +403,34 @@ export function ShopProvider({ children }) {
     return () => clearInterval(id);
   }, []);
 
+  // Unified SMS Inbox: every order with a phone number gets a follow-up customer text a little
+  // later, giving the Inbox real content and letting the POS/KDS toast demo itself with no setup.
+  // Skips the very first render so seeded/persisted orders don't all text in at once.
+  const prevOrderIdsRef = useRef(null);
+  useEffect(() => {
+    const currentIds = new Set(state.orders.map((o) => o.id));
+    if (prevOrderIdsRef.current) {
+      const timeouts = [];
+      for (const order of state.orders) {
+        if (!prevOrderIdsRef.current.has(order.id) && order.customerPhone) {
+          const text = MOCK_INBOUND_TEXTS[Math.floor(Math.random() * MOCK_INBOUND_TEXTS.length)];
+          const delay = 7000 + Math.random() * 6000;
+          timeouts.push(
+            setTimeout(() => {
+              dispatch({
+                type: "RECEIVE_MESSAGE",
+                payload: { customerName: order.customerName, customerPhone: order.customerPhone, orderId: order.id, text },
+              });
+            }, delay)
+          );
+        }
+      }
+      prevOrderIdsRef.current = currentIds;
+      return () => timeouts.forEach(clearTimeout);
+    }
+    prevOrderIdsRef.current = currentIds;
+  }, [state.orders]);
+
   const actions = useMemo(
     () => ({
       completeOnboarding: (payload) => dispatch({ type: "COMPLETE_ONBOARDING", payload }),
@@ -350,6 +445,7 @@ export function ShopProvider({ children }) {
       completeOrder: (id) => dispatch({ type: "COMPLETE_ORDER", payload: { id } }),
       markOrderPaid: (id) => dispatch({ type: "MARK_ORDER_PAID", payload: { id } }),
       assignDriver: (id, driver) => dispatch({ type: "ASSIGN_DRIVER", payload: { id, driver } }),
+      paySplitPortion: (id, amount) => dispatch({ type: "PAY_SPLIT_PORTION", payload: { id, amount } }),
 
       upsertCustomer: (payload) => dispatch({ type: "UPSERT_CUSTOMER", payload }),
       claimLoyaltyPoints: (phone) => dispatch({ type: "CLAIM_LOYALTY_POINTS", payload: { phone } }),
@@ -370,6 +466,9 @@ export function ShopProvider({ children }) {
 
       setSubscriptionPlan: (payload) => dispatch({ type: "SET_SUBSCRIPTION_PLAN", payload }),
       subscribeCustomer: (payload) => dispatch({ type: "SUBSCRIBE_CUSTOMER", payload }),
+
+      sendMessage: (conversationId, text) => dispatch({ type: "SEND_MESSAGE", payload: { conversationId, text } }),
+      markConversationRead: (id) => dispatch({ type: "MARK_CONVERSATION_READ", payload: { id } }),
     }),
     []
   );

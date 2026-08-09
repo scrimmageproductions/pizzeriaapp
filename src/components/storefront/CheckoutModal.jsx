@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bike, CreditCard, ShoppingBag } from "lucide-react";
+import { Bike, CreditCard, ShoppingBag, Users, Utensils } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import Modal from "../shared/Modal";
 import Button from "../shared/Button";
@@ -7,7 +7,7 @@ import { FormField, TextInput } from "../shared/FormField";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function CheckoutModal({ open, onClose, totals, primaryColor, onPlaceOrder }) {
+export default function CheckoutModal({ open, onClose, totals, primaryColor, isDineIn, tableNumber, onPlaceOrder, onSplitBill }) {
   const [customerName, setCustomerName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -17,25 +17,32 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
 
-  const canSubmit =
+  const canPayFull =
     customerName.trim() &&
     EMAIL_RE.test(email.trim()) &&
     phone.trim().length >= 7 &&
-    (fulfillment === "pickup" || address.trim()) &&
+    (isDineIn || fulfillment === "pickup" || address.trim()) &&
     cardNumber.replace(/\s/g, "").length >= 12 &&
     cardExpiry.trim() &&
     cardCvc.trim().length >= 3;
 
+  const canSplit = isDineIn && customerName.trim() && phone.trim().length >= 7;
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canPayFull) return;
     onPlaceOrder({
       customerName: customerName.trim(),
       email: email.trim(),
       phone: phone.trim(),
-      fulfillment,
-      address: fulfillment === "delivery" ? address.trim() : null,
+      fulfillment: isDineIn ? "dine-in" : fulfillment,
+      address: !isDineIn && fulfillment === "delivery" ? address.trim() : null,
     });
+  };
+
+  const handleSplit = () => {
+    if (!canSplit) return;
+    onSplitBill({ customerName: customerName.trim(), email: email.trim(), phone: phone.trim() });
   };
 
   const formatCardNumber = (value) =>
@@ -61,32 +68,38 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
           </FormField>
         </div>
 
-        <FormField label="Order Type">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setFulfillment("pickup")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
-                fulfillment === "pickup" ? "text-white" : "border-gray-200 text-gray-500"
-              }`}
-              style={fulfillment === "pickup" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
-            >
-              <ShoppingBag size={15} /> Pickup
-            </button>
-            <button
-              type="button"
-              onClick={() => setFulfillment("delivery")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
-                fulfillment === "delivery" ? "text-white" : "border-gray-200 text-gray-500"
-              }`}
-              style={fulfillment === "delivery" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
-            >
-              <Bike size={15} /> Delivery
-            </button>
+        {isDineIn ? (
+          <div className="flex items-center gap-2 rounded-xl border-2 border-[#F39C12]/40 bg-[#F39C12]/10 px-4 py-3 text-sm font-bold text-[#B8860B]">
+            <Utensils size={16} /> Dine-In · Table {tableNumber}
           </div>
-        </FormField>
+        ) : (
+          <FormField label="Order Type">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setFulfillment("pickup")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
+                  fulfillment === "pickup" ? "text-white" : "border-gray-200 text-gray-500"
+                }`}
+                style={fulfillment === "pickup" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
+              >
+                <ShoppingBag size={15} /> Pickup
+              </button>
+              <button
+                type="button"
+                onClick={() => setFulfillment("delivery")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
+                  fulfillment === "delivery" ? "text-white" : "border-gray-200 text-gray-500"
+                }`}
+                style={fulfillment === "delivery" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
+              >
+                <Bike size={15} /> Delivery
+              </button>
+            </div>
+          </FormField>
+        )}
 
-        {fulfillment === "delivery" && (
+        {!isDineIn && fulfillment === "delivery" && (
           <FormField label="Delivery Address">
             <TextInput value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Apt 4B" />
           </FormField>
@@ -134,9 +147,20 @@ export default function CheckoutModal({ open, onClose, totals, primaryColor, onP
           </div>
         </div>
 
-        <Button type="submit" size="lg" className="w-full" style={{ backgroundColor: primaryColor }} disabled={!canSubmit}>
-          Place Order
+        <Button type="submit" size="lg" className="w-full" style={{ backgroundColor: primaryColor }} disabled={!canPayFull}>
+          Pay Full Bill — {formatCurrency(totals.total)}
         </Button>
+
+        {isDineIn && (
+          <button
+            type="button"
+            onClick={handleSplit}
+            disabled={!canSplit}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border-2 border-gray-200 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Users size={15} /> Split the Bill
+          </button>
+        )}
       </form>
     </Modal>
   );

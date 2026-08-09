@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  Ban,
   Bike,
   CheckCircle2,
   Crown,
@@ -27,6 +28,8 @@ import { TextInput } from "../shared/FormField";
 import Toast from "../shared/Toast";
 import ThemeToggle from "../shared/ThemeToggle";
 import PosPaymentModal from "./PosPaymentModal";
+import Item86Modal from "./Item86Modal";
+import InboxToast from "./InboxToast";
 
 const TAX_RATE = 0.08;
 const VIP_DISCOUNT_RATE = 0.1;
@@ -48,6 +51,8 @@ export default function PosPage() {
   const { playTick } = useSound();
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+  const [edit86Mode, setEdit86Mode] = useState(false);
+  const [item86Target, setItem86Target] = useState(null);
   const [ticket, setTicket] = useState([]);
   const [orderType, setOrderType] = useState("walkin"); // 'walkin' | 'phone'
   const [customerName, setCustomerName] = useState("");
@@ -194,6 +199,7 @@ export default function PosPage() {
   return (
     <div className="theme-transition flex h-screen flex-col bg-gray-100 dark:bg-[#0a0a0a]">
       <Toast show={!!toast.message} message={toast.message} icon={toast.icon} />
+      <InboxToast />
       <div className="glass-surface flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-white/10">
         <div className="flex items-center gap-2.5">
           <span
@@ -239,38 +245,77 @@ export default function PosPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Menu grid — 70% */}
         <div className="w-[70%] overflow-y-auto p-4">
-          <div className="mb-4 flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
-                  activeCategory === cat
-                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                    : "bg-white text-gray-600 shadow-sm hover:bg-gray-50 dark:bg-white/10 dark:text-white/60 dark:shadow-none dark:hover:bg-white/15"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                    activeCategory === cat
+                      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                      : "bg-white text-gray-600 shadow-sm hover:bg-gray-50 dark:bg-white/10 dark:text-white/60 dark:shadow-none dark:hover:bg-white/15"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setEdit86Mode((v) => !v)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold shadow-sm transition ${
+                edit86Mode
+                  ? "bg-[#E31837] text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50 dark:bg-white/10 dark:text-white/60 dark:shadow-none dark:hover:bg-white/15"
+              }`}
+            >
+              <Ban size={15} /> {edit86Mode ? "Done Editing" : "Edit / 86 Mode"}
+            </button>
           </div>
+
+          {edit86Mode && (
+            <p className="mb-3 rounded-xl border border-dashed border-[#E31837]/40 bg-[#E31837]/5 px-3 py-2 text-xs font-semibold text-[#E31837]">
+              Tap any item to mark it sold out or bring it back — changes go live on your storefront instantly.
+            </p>
+          )}
 
           {categoryItems.length === 0 ? (
             <p className="py-16 text-center text-sm text-gray-400 dark:text-white/30">No items in this category.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              {categoryItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => addToTicket(item)}
-                  className={`flex h-28 flex-col items-start justify-between rounded-2xl p-4 text-left text-white shadow-sm transition active:scale-95 ${
-                    CATEGORY_STYLES[item.category] || FALLBACK_STYLE
-                  }`}
-                >
-                  <span className="line-clamp-2 text-sm font-extrabold leading-tight">{item.name}</span>
-                  <span className="text-base font-bold">{formatCurrency(item.price)}</span>
-                </button>
-              ))}
+              {categoryItems.map((item) => {
+                const unavailable = item.isAvailable === false;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (edit86Mode) {
+                        setItem86Target(item);
+                        return;
+                      }
+                      if (unavailable) return;
+                      addToTicket(item);
+                    }}
+                    className={`relative flex h-28 flex-col items-start justify-between rounded-2xl p-4 text-left shadow-sm transition active:scale-95 ${
+                      edit86Mode
+                        ? `text-white ring-2 ring-offset-2 ring-offset-gray-100 dark:ring-offset-[#0a0a0a] ${
+                            unavailable ? "bg-gray-400 ring-[#E31837]" : `${CATEGORY_STYLES[item.category] || FALLBACK_STYLE} ring-white/60`
+                          }`
+                        : unavailable
+                        ? "cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-white/5 dark:text-white/20"
+                        : `text-white ${CATEGORY_STYLES[item.category] || FALLBACK_STYLE}`
+                    }`}
+                  >
+                    {unavailable && (
+                      <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-[#E31837] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
+                        <Ban size={9} /> 86'D
+                      </span>
+                    )}
+                    <span className="line-clamp-2 text-sm font-extrabold leading-tight">{item.name}</span>
+                    <span className="text-base font-bold">{formatCurrency(item.price)}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -495,6 +540,8 @@ export default function PosPage() {
         onConfirmPaid={markOrderPaid}
         onFinish={resetTicket}
       />
+
+      <Item86Modal item={item86Target} onClose={() => setItem86Target(null)} />
     </div>
   );
 }

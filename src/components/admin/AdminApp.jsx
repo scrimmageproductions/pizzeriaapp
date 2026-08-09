@@ -15,6 +15,7 @@ import SocialStudioPage from "./SocialStudioPage";
 import BrandsPage from "./BrandsPage";
 import BillingPage from "./BillingPage";
 import SubscriptionsPage from "./SubscriptionsPage";
+import InboxPage from "./InboxPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -30,6 +31,7 @@ export default function AdminApp() {
         <Route path="delivery" element={<DeliveryDispatchPage />} />
         <Route path="menu" element={<MenuBrandManagerPage />} />
         <Route path="crm" element={<CrmPage />} />
+        <Route path="inbox" element={<InboxPage />} />
         <Route path="marketing" element={<MarketingPage />} />
         <Route path="marketing/social" element={<SocialStudioPage />} />
         <Route path="marketing/subscriptions" element={<SubscriptionsPage />} />

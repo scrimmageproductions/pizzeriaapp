@@ -7,6 +7,7 @@ import { useSound } from "../../utils/useSound";
 import { getOrderTiming, sortOrdersByUrgency } from "../../utils/helpers";
 import OrderCard from "./OrderCard";
 import KdsEmptyState from "./KdsEmptyState";
+import InboxToast from "./InboxToast";
 
 const COLUMNS = [
   { stageIndex: 0, label: "Order Received", accent: "border-t-gray-400 dark:border-t-white/20" },
@@ -36,6 +37,7 @@ export default function OrderKDSPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <InboxToast />
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Order KDS</h1>
         <p className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-white/40">

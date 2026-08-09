@@ -126,7 +126,12 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
             <span>{formatCurrency(order.total)}</span>
           </div>
           <div className="mt-3 text-xs text-gray-500">
-            {order.fulfillment === "delivery" ? `Delivering to ${order.address}` : "Pickup in-store"} · {order.customerName}
+            {order.fulfillment === "delivery"
+              ? `Delivering to ${order.address}`
+              : order.fulfillment === "dine-in"
+              ? `Table ${order.tableNumber}`
+              : "Pickup in-store"}{" "}
+            · {order.customerName}
           </div>
         </div>
 

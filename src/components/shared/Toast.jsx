@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 
-export default function Toast({ show, message, icon: Icon = CheckCircle2 }) {
+export default function Toast({ show, message, icon: Icon = CheckCircle2, iconClassName = "text-[#00A651]" }) {
   return (
     <AnimatePresence>
       {show && (
@@ -12,7 +12,7 @@ export default function Toast({ show, message, icon: Icon = CheckCircle2 }) {
           transition={{ duration: 0.25, ease: "easeOut" }}
           className="fixed left-1/2 top-6 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-full bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white shadow-xl"
         >
-          <Icon size={16} className="text-[#00A651]" />
+          <Icon size={16} className={iconClassName} />
           {message}
         </motion.div>
       )}

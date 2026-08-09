@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link2, TrendingUp, Copy, Check, ExternalLink, LayoutGrid, Users, PiggyBank, Ban, Palette, Database, Sparkles, Ticket } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
-import { formatCurrency } from "../../utils/helpers";
+import { belongsToLocation, formatCurrency } from "../../utils/helpers";
 import { DEFAULT_CONVERSION_METRICS } from "../../data/loyalty";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
@@ -19,8 +19,9 @@ export default function OverviewPage() {
   const [copied, setCopied] = useState(false);
 
   const publicUrl = `${window.location.origin}/${shop.slug}`;
-  const activeOrderCount = orders.filter((o) => !o.completedAt).length;
-  const totalSales = shop.mockSalesBaseline + orders.reduce((sum, o) => sum + o.total, 0);
+  const locationOrders = orders.filter((o) => belongsToLocation(o, shop.activeLocationId));
+  const activeOrderCount = locationOrders.filter((o) => !o.completedAt).length;
+  const totalSales = shop.mockSalesBaseline + locationOrders.reduce((sum, o) => sum + o.total, 0);
   const commissionSaved = totalSales * COMMISSION_RATE;
   const conversionMetrics = shop.conversionMetrics || DEFAULT_CONVERSION_METRICS;
 

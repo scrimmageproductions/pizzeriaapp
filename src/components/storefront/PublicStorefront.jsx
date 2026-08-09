@@ -15,7 +15,7 @@ export default function PublicStorefront() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get("table");
-  const { shop, items, orders, customers, activeCustomerId } = useShopState();
+  const { shop, items, orders, customers, activeCustomerId, estimatedWaitTime } = useShopState();
   const { addOrder, upsertCustomer, redeemReward, setActiveCustomer } = useShopActions();
 
   const [cart, setCart] = useState([]);
@@ -104,6 +104,7 @@ export default function PublicStorefront() {
       dispatchedAt: null,
       lat: destination.lat,
       lng: destination.lng,
+      locationId: shop.locations?.[0]?.id || null, // online orders always route to the primary location
     };
     addOrder(order);
     upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total, address });
@@ -126,6 +127,7 @@ export default function PublicStorefront() {
         onOpenCart={() => setCartOpen(true)}
         customer={activeCustomer}
         onSignOut={() => setActiveCustomer(null)}
+        estimatedWaitTime={estimatedWaitTime}
       />
 
       {!shop.acceptingOrders && (

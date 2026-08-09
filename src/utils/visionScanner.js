@@ -58,9 +58,12 @@ function flattenCategories(categories) {
 }
 
 /**
- * Compresses the photo, sends it to the server-side Claude Vision endpoint, and returns a flat
- * array of parsed menu items ready for the editable review grid. Throws MenuScanError with a
- * user-facing message on any failure — network, server, or a malformed/refused response.
+ * Compresses the photo, sends it to the server-side Claude Vision endpoint, and returns
+ * { items, demo } — a flat array of parsed menu items ready for the editable review grid, plus
+ * whether the server served its demo-mode mock (no ANTHROPIC_API_KEY configured, or the live call
+ * failed/timed out/was refused) instead of a real scan. Throws MenuScanError with a user-facing
+ * message only on failures the server itself can't gracefully fall back from — a network error
+ * reaching /api/scan-menu at all, or a response so malformed there's nothing usable in it.
  */
 export async function scanMenuWithVision(file) {
   const dataUrl = await compressImageForVision(file);
@@ -90,5 +93,5 @@ export async function scanMenuWithVision(file) {
     throw new MenuScanError("The scanner returned something unexpected. Please try again.");
   }
 
-  return flattenCategories(payload.categories);
+  return { items: flattenCategories(payload.categories), demo: payload.demo === true };
 }

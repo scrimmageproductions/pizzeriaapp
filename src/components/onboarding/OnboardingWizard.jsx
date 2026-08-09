@@ -10,6 +10,7 @@ import StepClaimShop from "./StepClaimShop";
 import StepBranding from "./StepBranding";
 import StepMenuScan from "./StepMenuScan";
 import StepReveal from "./StepReveal";
+import ClaimStoreModal from "./ClaimStoreModal";
 
 const STEPS = ["Claim Shop", "Branding", "Menu", "Launch"];
 
@@ -25,6 +26,7 @@ export default function OnboardingWizard() {
   const [toast, setToast] = useState("");
   const [confettiKey, setConfettiKey] = useState(0);
   const [launching, setLaunching] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
 
   const slug = slugify(name);
 
@@ -49,7 +51,9 @@ export default function OnboardingWizard() {
 
     setTimeout(() => {
       window.open(`/${slug}`, "_blank", "noopener,noreferrer");
-      navigate("/admin");
+      // /admin requires a signed-in account, so — value first — the store already exists and is
+      // live at this point; claiming an account just saves it and unlocks the dashboard.
+      setClaimModalOpen(true);
     }, 1600);
   };
 
@@ -125,6 +129,12 @@ export default function OnboardingWizard() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      <ClaimStoreModal
+        open={claimModalOpen}
+        onClaimed={() => navigate("/admin")}
+        onDismiss={() => navigate("/login")}
+      />
     </div>
   );
 }

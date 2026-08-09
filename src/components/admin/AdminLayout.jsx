@@ -7,6 +7,7 @@ import {
   CreditCard,
   FileText,
   LayoutGrid,
+  LogOut,
   Megaphone,
   Menu,
   Package,
@@ -23,6 +24,9 @@ import {
   X,
 } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
+import { useAuthActions } from "../../context/AuthContext";
+import { canViewNavItem } from "../../data/rbac";
+import LocationSwitcher from "./LocationSwitcher";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Overview", icon: Store },
@@ -44,11 +48,21 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout({ children }) {
-  const { shop, orders } = useShopState();
+  const { shop, orders, clockedInUser } = useShopState();
+  const { logout } = useAuthActions();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   const activeOrderCount = orders.filter((o) => !o.completedAt).length;
+  // Nobody's clocked in yet on this device → full access, same as before RBAC existed. Redaction
+  // only kicks in once someone has actually clocked in as a Cashier.
+  const role = clockedInUser?.role || "Admin";
+  const visibleNavItems = NAV_ITEMS.filter((item) => canViewNavItem(role, item.to));
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -110,8 +124,10 @@ export default function AdminLayout({ children }) {
           </div>
         </div>
 
+        <LocationSwitcher />
+
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -145,8 +161,15 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        <div className="border-t border-white/10 px-5 py-4">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white/40">
+        <div className="border-t border-white/10 px-3 py-3">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+          >
+            <LogOut size={18} />
+            <span className="flex-1 text-left">Log Out</span>
+          </button>
+          <p className="mt-3 flex items-center gap-1.5 px-3 text-[11px] font-semibold text-white/40">
             <Ban size={12} /> 0% commission, always
           </p>
         </div>

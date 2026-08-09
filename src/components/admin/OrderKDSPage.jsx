@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, LayoutGrid } from "lucide-react";
-import { useShopState } from "../../context/ShopContext";
+import { ChevronDown, ChevronUp, LayoutGrid, LogOut, UserRound } from "lucide-react";
+import { useShopActions, useShopState } from "../../context/ShopContext";
 import { useTicker } from "../../utils/useTicker";
-import { getOrderTiming, sortOrdersByUrgency } from "../../utils/helpers";
+import { belongsToLocation, getOrderTiming, sortOrdersByUrgency } from "../../utils/helpers";
+import { useDynamicWaitTime } from "../../utils/useDynamicWaitTime";
 import OrderCard from "./OrderCard";
+import WaitTimeBanner from "./WaitTimeBanner";
+import PinLockScreen from "../shared/PinLockScreen";
 
 const COLUMNS = [
   { stageIndex: 0, label: "Order Received", accent: "border-t-gray-400" },
@@ -12,22 +15,46 @@ const COLUMNS = [
 ];
 
 export default function OrderKDSPage() {
-  const { shop, orders } = useShopState();
+  const { shop, orders, clockedInUser } = useShopState();
+  const { updateShop, clockOutUser } = useShopActions();
   const now = useTicker(1000);
   const [showCompleted, setShowCompleted] = useState(false);
+  const waitTime = useDynamicWaitTime();
 
-  const activeOrders = orders.filter((o) => !o.completedAt);
-  const completedOrders = orders.filter((o) => o.completedAt);
+  if (!clockedInUser) return <PinLockScreen primaryColor={shop.primaryColor} title="Clock In" subtitle="Enter your PIN to access the Kitchen Display" />;
+
+  const locationOrders = orders.filter((o) => belongsToLocation(o, shop.activeLocationId));
+  const activeOrders = locationOrders.filter((o) => !o.completedAt);
+  const completedOrders = locationOrders.filter((o) => o.completedAt);
   const sorted = sortOrdersByUrgency(activeOrders, now);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Order KDS</h1>
-        <p className="flex items-center gap-1.5 text-sm text-gray-500">
-          <LayoutGrid size={15} /> Orders accept and cook automatically off your {shop.prepMinutes}-minute prep time.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Order KDS</h1>
+          <p className="flex items-center gap-1.5 text-sm text-gray-500">
+            <LayoutGrid size={15} /> Orders accept and cook automatically off your {shop.prepMinutes}-minute prep time.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600">
+            <UserRound size={13} /> {clockedInUser.name} · {clockedInUser.role}
+          </span>
+          <button
+            onClick={clockOutUser}
+            className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
+          >
+            <LogOut size={14} /> Clock Out
+          </button>
+        </div>
       </div>
+
+      <WaitTimeBanner
+        waitTime={waitTime}
+        overrideActive={shop.waitTimeOverrideActive}
+        onToggleOverride={() => updateShop({ waitTimeOverrideActive: !shop.waitTimeOverrideActive })}
+      />
 
       <div className="grid gap-5 lg:grid-cols-3">
         {COLUMNS.map((col) => {

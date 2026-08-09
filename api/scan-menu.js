@@ -66,17 +66,69 @@ const DATA_URL_RE = /^data:(image\/(?:png|jpeg|jpg|webp));base64,(.+)$/;
 // Vercel serverless functions cap request bodies at 4.5MB; the client compresses images well
 // under that, but reject oversized payloads outright rather than let the platform 413 us blind.
 const MAX_BASE64_LENGTH = 6_000_000;
+// Don't let a stalled upstream request hang a serverless invocation indefinitely — time out and
+// fall back to the demo-mode mock rather than have the client wait on a dead connection.
+const REQUEST_TIMEOUT_MS = 25_000;
+
+// Served whenever the real Vision call can't run — no ANTHROPIC_API_KEY configured, the request
+// errors, times out, gets refused, or otherwise fails to parse. Shaped exactly like a real
+// response so the frontend's review grid works identically; the `demo: true` flag is the only
+// difference, and is how the client knows to show the "Demo Mode" notice instead of pretending
+// this came from a live scan.
+const MOCK_MENU_RESULT = {
+  categories: [
+    {
+      name: "Specialty Pizzas",
+      items: [
+        {
+          name: "The Godfather",
+          description: "Pepperoni, hot honey, calabrian chili, fresh mozzarella",
+          prices: [
+            { size: "Small", price: 16.99 },
+            { size: "Medium", price: 20.99 },
+            { size: "Large", price: 24.99 },
+          ],
+        },
+        {
+          name: "White Truffle Pie",
+          description: "Ricotta, mozzarella, truffle oil, cracked black pepper",
+          prices: [
+            { size: "Small", price: 17.99 },
+            { size: "Large", price: 25.99 },
+          ],
+        },
+        {
+          name: "Margherita",
+          description: "San Marzano tomato, fresh basil, fresh mozzarella",
+          prices: [
+            { size: "Small", price: 14.99 },
+            { size: "Medium", price: 18.99 },
+            { size: "Large", price: 22.99 },
+          ],
+        },
+      ],
+    },
+    {
+      name: "Appetizers",
+      items: [
+        { name: "Garlic Knots", description: "Six knots, garlic butter, shaved parmesan", prices: [{ size: null, price: 7.5 }] },
+        { name: "Fried Calamari", description: "Lightly fried, served with house marinara", prices: [{ size: null, price: 12.5 }] },
+        { name: "Loaded Fries", description: "Mozzarella, bacon, ranch drizzle", prices: [{ size: null, price: 9.0 }] },
+      ],
+    },
+  ],
+};
+
+function sendDemoFallback(res, reason, err) {
+  if (err) console.error(`scan-menu: ${reason} — serving demo-mode mock menu`, err);
+  else console.warn(`scan-menu: ${reason} — serving demo-mode mock menu`);
+  return res.status(200).json({ ...MOCK_MENU_RESULT, demo: true });
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error("scan-menu: ANTHROPIC_API_KEY is not configured");
-    return res.status(500).json({ error: "Menu scanning isn't configured on the server yet." });
   }
 
   const image = req.body?.image;
@@ -94,7 +146,15 @@ export default async function handler(req, res) {
   }
   const mediaType = rawMediaType === "image/jpg" ? "image/jpeg" : rawMediaType;
 
-  const client = new Anthropic({ apiKey });
+  // Bulletproof for the prototype environment: a missing key or any failure of the live call
+  // (network error, timeout, refusal, unparseable output) degrades to a realistic mock instead of
+  // a 500 — the onboarding flow, loading animation, and editable review grid all keep working.
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return sendDemoFallback(res, "ANTHROPIC_API_KEY is not configured");
+  }
+
+  const client = new Anthropic({ apiKey, timeout: REQUEST_TIMEOUT_MS });
 
   let response;
   try {
@@ -114,17 +174,15 @@ export default async function handler(req, res) {
       output_config: { format: { type: "json_schema", schema: MENU_SCHEMA } },
     });
   } catch (err) {
-    console.error("scan-menu: Anthropic request failed", err);
-    return res.status(502).json({ error: "Couldn't scan that menu right now. Please try again." });
+    return sendDemoFallback(res, "Anthropic request failed or timed out", err);
   }
 
   if (response.stop_reason === "refusal") {
-    return res.status(422).json({ error: "Couldn't read that image. Try a clearer photo of the menu." });
+    return sendDemoFallback(res, "Claude declined to read the image");
   }
 
   if (response.parsed_output == null) {
-    console.error("scan-menu: no parsed_output, stop_reason =", response.stop_reason);
-    return res.status(502).json({ error: "Couldn't make sense of that menu. Try a clearer, well-lit photo." });
+    return sendDemoFallback(res, `no parsed_output (stop_reason = ${response.stop_reason})`);
   }
 
   return res.status(200).json(response.parsed_output);

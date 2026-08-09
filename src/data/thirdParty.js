@@ -38,5 +38,6 @@ export function buildMockThirdPartyOrder(source, items, shop) {
     dispatchedAt: null,
     lat: null,
     lng: null,
+    locationId: shop.locations?.[0]?.id || null, // marketplace orders always route to the primary location
   };
 }

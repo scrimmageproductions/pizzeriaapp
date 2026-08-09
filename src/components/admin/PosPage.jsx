@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bike, Camera, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound, X } from "lucide-react";
+import { ArrowLeft, Bike, Camera, LogOut, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound, X } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, formatItemPrice, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
+import PinLockScreen from "../shared/PinLockScreen";
 import PizzaModifierModal from "../shared/PizzaModifierModal";
 import PosPaymentModal from "./PosPaymentModal";
 import PaperTicketModal from "./PaperTicketModal";
@@ -20,8 +21,8 @@ const CATEGORY_STYLES = {
 const FALLBACK_STYLE = "bg-gray-500 hover:bg-gray-600";
 
 export default function PosPage() {
-  const { shop, items, orders } = useShopState();
-  const { addOrder, upsertCustomer, markOrderPaid } = useShopActions();
+  const { shop, items, orders, clockedInUser } = useShopState();
+  const { addOrder, upsertCustomer, markOrderPaid, clockOutUser } = useShopActions();
   const navigate = useNavigate();
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
@@ -37,6 +38,7 @@ export default function PosPage() {
   const [modifierItem, setModifierItem] = useState(null);
 
   if (!shop) return <Navigate to="/onboarding" replace />;
+  if (!clockedInUser) return <PinLockScreen primaryColor={shop.primaryColor} title="Clock In" subtitle="Enter your PIN to open the register" />;
 
   const addToTicket = (item) => {
     if (paperTicket) return; // photographed ticket already carries its own total — no digital items to add
@@ -93,6 +95,7 @@ export default function PosPage() {
       dispatchedAt: null,
       lat: destination.lat,
       lng: destination.lng,
+      locationId: shop.activeLocationId || null,
     };
   };
 
@@ -141,12 +144,23 @@ export default function PosPage() {
             <p className="text-xs leading-tight text-gray-400">Tablet POS</p>
           </div>
         </div>
-        <button
-          onClick={() => navigate("/admin")}
-          className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
-        >
-          <ArrowLeft size={14} /> Exit to Dashboard
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="hidden items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 sm:flex">
+            <UserRound size={13} /> {clockedInUser.name} · {clockedInUser.role}
+          </span>
+          <button
+            onClick={clockOutUser}
+            className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
+          >
+            <LogOut size={14} /> Clock Out
+          </button>
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
+          >
+            <ArrowLeft size={14} /> Exit to Dashboard
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">

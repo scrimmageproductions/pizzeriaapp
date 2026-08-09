@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Bike, ChevronDown, ChevronUp, Clock, MapPin, Navigation, User, Users } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { useTicker } from "../../utils/useTicker";
-import { formatCurrency, getOrderTiming } from "../../utils/helpers";
+import { belongsToLocation, formatCurrency, getOrderTiming } from "../../utils/helpers";
 import DeliveryMap from "./DeliveryMap";
 import Button from "../shared/Button";
 import { Select } from "../shared/FormField";
@@ -107,7 +107,7 @@ export default function DeliveryDispatchPage() {
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showDelivered, setShowDelivered] = useState(false);
 
-  const allDelivery = orders.filter((o) => o.fulfillment === "delivery");
+  const allDelivery = orders.filter((o) => o.fulfillment === "delivery" && belongsToLocation(o, shop.activeLocationId));
   const activeDelivery = allDelivery.filter((o) => !o.completedAt);
   const readyDelivery = activeDelivery.filter((o) => getOrderTiming(o, now).stageIndex === 2);
   const unassigned = readyDelivery.filter((o) => !o.assignedDriver);

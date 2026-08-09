@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowRight, CheckCircle2, ScanLine } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, ScanLine, TriangleAlert } from "lucide-react";
 import { formatItemPrice } from "../../utils/helpers";
 import { MenuScanError, scanMenuWithVision } from "../../utils/visionScanner";
 import Dropzone from "../shared/Dropzone";
 import Button from "../shared/Button";
+import Toast from "../shared/Toast";
 import ScannedMenuReviewModal from "./ScannedMenuReviewModal";
 
 const LOADING_MESSAGES = ["Claude is reading the layout…", "Extracting prices & sizes…", "Categorizing items…", "Finalizing menu…"];
@@ -16,6 +17,7 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
   const [error, setError] = useState(null);
   const [parsedItems, setParsedItems] = useState([]);
   const [importedItems, setImportedItems] = useState([]);
+  const [demoToast, setDemoToast] = useState(false);
   const intervalRef = useRef(null);
   const thumbnailUrlRef = useRef(null);
 
@@ -41,9 +43,13 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
     }, 1500);
 
     try {
-      const items = await scanMenuWithVision(file);
+      const { items, demo } = await scanMenuWithVision(file);
       setParsedItems(items);
       setPhase("review");
+      if (demo) {
+        setDemoToast(true);
+        setTimeout(() => setDemoToast(false), 4000);
+      }
     } catch (err) {
       console.error("Menu scan failed", err);
       const message = err instanceof MenuScanError ? err.message : "Couldn't read that image. Try a clearer, well-lit photo — or add items manually.";
@@ -150,6 +156,8 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
         onImport={handleImport}
         primaryColor={primaryColor}
       />
+
+      <Toast show={demoToast} message="⚠️ No API key found: Running in Demo Mode." icon={TriangleAlert} iconClassName="text-amber-400" />
     </div>
   );
 }

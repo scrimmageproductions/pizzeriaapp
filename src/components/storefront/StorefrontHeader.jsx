@@ -1,7 +1,8 @@
-import { Pizza, ShoppingCart, Star } from "lucide-react";
+import { Flame, Pizza, ShoppingCart, Star } from "lucide-react";
 import { isShopOpen, formatHour } from "../../utils/helpers";
+import { formatWaitRange } from "../../utils/waitTime";
 
-export default function StorefrontHeader({ shop, cartCount, onOpenCart, customer, onSignOut }) {
+export default function StorefrontHeader({ shop, cartCount, onOpenCart, customer, onSignOut, estimatedWaitTime }) {
   const open = isShopOpen(shop.hours);
   const firstName = customer?.name?.split(" ")[0];
 
@@ -23,6 +24,16 @@ export default function StorefrontHeader({ shop, cartCount, onOpenCart, customer
               <span className={`h-1.5 w-1.5 rounded-full ${open ? "bg-[#00A651]" : "bg-gray-400"}`} />
               {open ? "Open Now" : "Closed"} · {formatHour(shop.hours.open)}–{formatHour(shop.hours.close)}
             </span>
+            {open && estimatedWaitTime && (
+              <span
+                className={`mt-0.5 flex items-center gap-1 text-[11px] font-bold ${
+                  estimatedWaitTime.isThrottled ? "text-orange-600" : "text-gray-400"
+                }`}
+              >
+                {estimatedWaitTime.isThrottled && <Flame size={11} />}
+                Ready in {formatWaitRange(estimatedWaitTime.minutes)}
+              </span>
+            )}
           </div>
         </div>
 

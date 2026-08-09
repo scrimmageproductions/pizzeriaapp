@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Copy, CreditCard, Globe, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, Globe, Loader2, MapPin, Plus, ShieldCheck } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { DEFAULT_BILLING } from "../../data/loyalty";
+import { computeBillingBreakdown } from "../../utils/billing";
+import { formatCurrency } from "../../utils/helpers";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
 import { TextInput } from "../shared/FormField";
+import AddLocationModal from "./AddLocationModal";
 
 const DNS_RECORDS = [
   { type: "A Record", name: "@", value: "76.76.21.21" },
@@ -38,8 +41,9 @@ export default function BillingPage() {
 
   const [domainDraft, setDomainDraft] = useState(billing.customDomainUrl || "");
   const [verifying, setVerifying] = useState(false);
+  const [addLocationOpen, setAddLocationOpen] = useState(false);
 
-  const totalMonthly = billing.planPrice + (billing.hasCustomDomain ? 10 : 0);
+  const bill = computeBillingBreakdown(shop);
 
   const startUpgrade = () => updateShop({ billing: { ...billing, hasCustomDomain: true } });
 
@@ -72,11 +76,30 @@ export default function BillingPage() {
             <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Current Plan</p>
             <p className="mt-1 text-lg font-extrabold text-gray-900">{billing.plan}</p>
             <p className="mt-1 text-sm font-semibold text-[#00A651]">0% Commissions, always</p>
-            <p className="mt-3 text-2xl font-black text-gray-900">
-              {formatMoney(totalMonthly)}
-              <span className="text-sm font-semibold text-gray-400">/month</span>
+
+            <div className="mt-3 space-y-1 border-t border-gray-200 pt-3 text-xs font-semibold text-gray-500">
+              <div className="flex justify-between">
+                <span>DeepDish Core Plan (1st Location Included)</span>
+                <span>{formatCurrency(bill.basePrice)}/mo</span>
+              </div>
+              {bill.extraLocations > 0 && (
+                <div className="flex justify-between">
+                  <span>Additional Locations ({bill.extraLocations})</span>
+                  <span>{formatCurrency(bill.extraLocationsCost)}/mo</span>
+                </div>
+              )}
+              {bill.hasCustomDomain && (
+                <div className="flex justify-between">
+                  <span>Custom Domain Add-on</span>
+                  <span>{formatCurrency(bill.domainCost)}/mo</span>
+                </div>
+              )}
+            </div>
+
+            <p className="mt-3 border-t border-gray-200 pt-3 text-2xl font-black text-gray-900">
+              {formatCurrency(bill.total)}
+              <span className="text-sm font-semibold text-gray-400">/mo</span>
             </p>
-            {billing.hasCustomDomain && <p className="mt-0.5 text-xs text-gray-500">Core ({formatMoney(billing.planPrice)}) + Domain Add-on ($10)</p>}
           </div>
           <div className="rounded-xl bg-gray-50 p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Next Billing Date</p>
@@ -87,6 +110,18 @@ export default function BillingPage() {
             <p className="mt-1 flex items-center gap-2 text-sm font-bold text-gray-700">
               <CreditCard size={15} className="text-gray-400" /> •••• •••• •••• {billing.cardLast4}
             </p>
+
+            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-gray-400">Locations ({bill.locationCount})</p>
+            <div className="mt-1.5 space-y-1">
+              {(shop.locations || []).map((loc) => (
+                <p key={loc.id} className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                  <MapPin size={11} className="shrink-0 text-gray-400" /> {loc.name}
+                </p>
+              ))}
+            </div>
+            <Button size="sm" variant="outline" icon={Plus} className="mt-3 w-full" onClick={() => setAddLocationOpen(true)}>
+              Add New Location (+{formatCurrency(10)}/mo)
+            </Button>
           </div>
         </div>
       </Card>
@@ -183,10 +218,8 @@ export default function BillingPage() {
           </AnimatePresence>
         </Card>
       )}
+
+      <AddLocationModal open={addLocationOpen} onClose={() => setAddLocationOpen(false)} />
     </div>
   );
-}
-
-function formatMoney(n) {
-  return `$${n}`;
 }

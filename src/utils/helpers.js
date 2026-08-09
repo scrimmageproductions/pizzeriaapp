@@ -26,6 +26,12 @@ export function formatItemPrice(item) {
   return item.price != null ? formatCurrency(item.price) : "—";
 }
 
+// Multi-Location Management: an order with no locationId predates the feature (or came from a
+// source that doesn't scope by location) — treat it as visible everywhere rather than hiding it.
+export function belongsToLocation(order, locationId) {
+  return !order.locationId || order.locationId === locationId;
+}
+
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }

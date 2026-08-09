@@ -6,6 +6,7 @@ import { buildAgentLogEntry, computeDeductions, INGREDIENT_SEED, SUPPLIER_SEED }
 import { DEFAULT_BILLING, DEFAULT_CONVERSION_METRICS, DEFAULT_LOYALTY, DEFAULT_RECOVERED_SALES } from "../data/loyalty";
 import { buildSeedApplicants, buildSeedDrivers, generateUniquePin } from "../data/drivers";
 import { buildMockThirdPartyOrder } from "../data/thirdParty";
+import { DEFAULT_WAIT_TIME } from "../utils/waitTime";
 
 const ShopStateContext = createContext(null);
 const ShopDispatchContext = createContext(null);
@@ -28,6 +29,8 @@ const DEFAULT_STATE = {
   zReports: [],
   merchantCart: [],
   supplyOrderHistory: [],
+  clockedInUser: null, // { role, name, clockedInAt } — RBAC PIN-lock session for POS/KDS terminals
+  estimatedWaitTime: DEFAULT_WAIT_TIME, // Auto-Throttle's live computed storefront wait quote
 };
 
 function init() {
@@ -38,6 +41,7 @@ function init() {
 function reducer(state, action) {
   switch (action.type) {
     case "COMPLETE_ONBOARDING": {
+      const primaryLocationId = uid("loc");
       const shop = {
         name: action.payload.name,
         slug: action.payload.slug,
@@ -61,6 +65,13 @@ function reducer(state, action) {
         lastZReportAt: null, // EOD register period start — null means "since midnight today"
         lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
         lng: -73.9442,
+        // Multi-Location Management: every shop launches with one primary location; owners add
+        // more from Billing or the sidebar switcher, at +$10/mo each.
+        locations: [
+          { id: primaryLocationId, name: "Main Location", address: "412 Willow Ave, Brooklyn, NY 11201", phone: "(555) 201-0000", managerPin: "5555" },
+        ],
+        activeLocationId: primaryLocationId,
+        waitTimeOverrideActive: false, // Auto-Throttle manual override — forces the standard 20m quote when set
         createdAt: Date.now(),
       };
       return {
@@ -362,6 +373,24 @@ function reducer(state, action) {
     case "SET_ACTIVE_CUSTOMER":
       return { ...state, activeCustomerId: action.payload.customerId };
 
+    case "SET_ACTIVE_LOCATION":
+      return { ...state, shop: state.shop ? { ...state.shop, activeLocationId: action.payload.locationId } : state.shop };
+
+    case "ADD_LOCATION":
+      return {
+        ...state,
+        shop: state.shop ? { ...state.shop, locations: [...(state.shop.locations || []), action.payload.location] } : state.shop,
+      };
+
+    case "CLOCK_IN_USER":
+      return { ...state, clockedInUser: { role: action.payload.role, name: action.payload.name, clockedInAt: Date.now() } };
+
+    case "CLOCK_OUT_USER":
+      return { ...state, clockedInUser: null };
+
+    case "SET_ESTIMATED_WAIT_TIME":
+      return { ...state, estimatedWaitTime: action.payload.estimatedWaitTime };
+
     case "_HYDRATE":
       return { ...DEFAULT_STATE, ...action.payload };
 
@@ -498,6 +527,14 @@ export function ShopProvider({ children }) {
       updateMerchantCartQty: (productId, qty) => dispatch({ type: "UPDATE_MERCHANT_CART_QTY", payload: { productId, qty } }),
       removeFromMerchantCart: (productId) => dispatch({ type: "REMOVE_FROM_MERCHANT_CART", payload: { productId } }),
       checkoutMerchantCart: (total) => dispatch({ type: "CHECKOUT_MERCHANT_CART", payload: { total } }),
+
+      setActiveLocation: (locationId) => dispatch({ type: "SET_ACTIVE_LOCATION", payload: { locationId } }),
+      addLocation: (location) => dispatch({ type: "ADD_LOCATION", payload: { location } }),
+
+      clockInUser: (role, name) => dispatch({ type: "CLOCK_IN_USER", payload: { role, name } }),
+      clockOutUser: () => dispatch({ type: "CLOCK_OUT_USER" }),
+
+      setEstimatedWaitTime: (estimatedWaitTime) => dispatch({ type: "SET_ESTIMATED_WAIT_TIME", payload: { estimatedWaitTime } }),
     }),
     []
   );

@@ -32,8 +32,8 @@ export default function MenuBrandManagerPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Menu & Brand Manager</h1>
-        <p className="text-sm text-gray-500">Every change here saves instantly and appears live on your white-labeled site.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Menu & Brand Manager</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Every change here saves instantly and appears live on your white-labeled site.</p>
       </div>
 
       <Card title="Brand Color" description="Used across your public site's header, buttons, and accents." icon={Palette}>
@@ -42,9 +42,9 @@ export default function MenuBrandManagerPage() {
             type="color"
             value={shop.primaryColor}
             onChange={(e) => updateShop({ primaryColor: e.target.value })}
-            className="h-11 w-11 cursor-pointer rounded-lg border border-gray-200 bg-white p-1"
+            className="h-11 w-11 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 dark:border-white/15 dark:bg-transparent"
           />
-          <span className="font-mono text-sm text-gray-600">{shop.primaryColor}</span>
+          <span className="font-mono text-sm text-gray-600 dark:text-white/60">{shop.primaryColor}</span>
         </div>
         <div className="mt-3 flex gap-2">
           {COLOR_SWATCHES.map((c) => (
@@ -52,8 +52,8 @@ export default function MenuBrandManagerPage() {
               key={c}
               onClick={() => updateShop({ primaryColor: c })}
               style={{ backgroundColor: c }}
-              className={`h-7 w-7 rounded-full ring-offset-2 transition ${
-                shop.primaryColor === c ? "ring-2 ring-gray-900" : "hover:scale-110"
+              className={`h-7 w-7 rounded-full ring-offset-2 transition dark:ring-offset-[#141414] ${
+                shop.primaryColor === c ? "ring-2 ring-gray-900 dark:ring-white" : "hover:scale-110"
               }`}
             />
           ))}
@@ -67,13 +67,15 @@ export default function MenuBrandManagerPage() {
               key={font.id}
               onClick={() => updateShop({ font: font.id })}
               className={`flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition ${
-                shop.font === font.id ? "border-[#E31837] bg-red-50/50" : "border-gray-200 hover:border-gray-300"
+                shop.font === font.id
+                  ? "border-[#E31837] bg-red-50/50 dark:bg-[#E31837]/10"
+                  : "border-gray-200 hover:border-gray-300 dark:border-white/10 dark:hover:border-white/20"
               }`}
             >
-              <span style={{ fontFamily: font.family }} className="text-2xl text-gray-900">
+              <span style={{ fontFamily: font.family }} className="text-2xl text-gray-900 dark:text-white">
                 Aa
               </span>
-              <span className="text-xs font-semibold text-gray-600">{font.label}</span>
+              <span className="text-xs font-semibold text-gray-600 dark:text-white/60">{font.label}</span>
             </button>
           ))}
         </div>
@@ -96,7 +98,7 @@ export default function MenuBrandManagerPage() {
             />
           </FormField>
         </div>
-        <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
           <FormField label="Default prep time (minutes)" hint="Drives the automated countdown on your Live Order KDS.">
             <TextInput
               type="number"
@@ -108,7 +110,7 @@ export default function MenuBrandManagerPage() {
             />
           </FormField>
         </div>
-        <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="mt-4 border-t border-gray-100 pt-4 dark:border-white/10">
           <Toggle
             checked={shop.acceptingOrders}
             onChange={(val) => updateShop({ acceptingOrders: val })}
@@ -128,7 +130,7 @@ export default function MenuBrandManagerPage() {
         }
       >
         {items.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400">
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400 dark:text-white/30">
             <ShoppingBag size={28} />
             <p className="text-sm">No menu items yet. Add your first one.</p>
           </div>
@@ -139,28 +141,28 @@ export default function MenuBrandManagerPage() {
               if (catItems.length === 0) return null;
               return (
                 <div key={category}>
-                  <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-gray-400">{category}</h3>
+                  <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-gray-400 dark:text-white/30">{category}</h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {catItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:shadow-sm"
+                        className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 p-3 transition hover:border-gray-300 hover:shadow-sm dark:border-white/10 dark:hover:border-white/20 dark:hover:shadow-none"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-gray-900">{item.name}</p>
-                          <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{item.description}</p>
+                          <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{item.name}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-gray-500 dark:text-white/40">{item.description}</p>
                           <p className="mt-1.5 text-sm font-bold text-[#E31837]">{formatCurrency(item.price)}</p>
                         </div>
                         <div className="flex shrink-0 gap-1">
                           <button
                             onClick={() => openEdit(item)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-white/30 dark:hover:bg-white/10 dark:hover:text-white/70"
                           >
                             <Pencil size={13} />
                           </button>
                           <button
                             onClick={() => setDeleteTarget(item)}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:text-white/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -178,7 +180,7 @@ export default function MenuBrandManagerPage() {
       <ItemFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} initialItem={editingItem} />
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Item" maxWidth="max-w-sm">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-white/60">
           Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.
         </p>
         <div className="mt-5 flex justify-end gap-2">

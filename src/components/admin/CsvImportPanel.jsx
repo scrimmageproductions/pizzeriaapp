@@ -74,14 +74,14 @@ export default function CsvImportPanel({
   const handleDownloadTemplate = () => downloadCsv(templateFilename, templateHeaders, [templateSampleRow]);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#141414] dark:shadow-none">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${accent}1a`, color: accent }}>
           <Icon size={18} />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-          <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">{title}</h3>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-white/40">{description}</p>
         </div>
       </div>
 
@@ -101,12 +101,12 @@ export default function CsvImportPanel({
           handleFiles(e.dataTransfer.files);
         }}
         className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition ${
-          dragOver ? "border-current bg-current/5" : "border-gray-200 bg-gray-50 hover:border-gray-300"
+          dragOver ? "border-current bg-current/5" : "border-gray-200 bg-gray-50 hover:border-gray-300 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20"
         }`}
         style={dragOver ? { color: accent } : undefined}
       >
-        <UploadCloud size={22} className="text-gray-400" />
-        <p className="text-xs font-semibold text-gray-600">Drag & drop a .csv file, or click to browse</p>
+        <UploadCloud size={22} className="text-gray-400 dark:text-white/30" />
+        <p className="text-xs font-semibold text-gray-600 dark:text-white/50">Drag & drop a .csv file, or click to browse</p>
         <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       </div>
 
@@ -118,7 +118,7 @@ export default function CsvImportPanel({
 
       <button
         onClick={handleDownloadTemplate}
-        className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600"
+        className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:text-white/30 dark:hover:text-white/60"
       >
         <Download size={12} /> Download Template
       </button>

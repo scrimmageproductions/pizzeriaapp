@@ -27,7 +27,9 @@ export default function Dropzone({ onFile, label, hint, preview, icon: Icon = Up
         handleFiles(e.dataTransfer.files);
       }}
       className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed p-10 text-center transition ${
-        dragOver ? "border-current bg-current/5" : "border-gray-300 bg-gray-50 hover:border-gray-400"
+        dragOver
+          ? "border-current bg-current/5"
+          : "border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-white/15 dark:bg-white/5 dark:hover:border-white/30"
       }`}
       style={dragOver ? { color: accent } : undefined}
     >
@@ -42,8 +44,8 @@ export default function Dropzone({ onFile, label, hint, preview, icon: Icon = Up
         </span>
       )}
       <div>
-        <p className="text-sm font-bold text-gray-800">{label}</p>
-        {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+        <p className="text-sm font-bold text-gray-800 dark:text-white/80">{label}</p>
+        {hint && <p className="mt-1 text-xs text-gray-500 dark:text-white/40">{hint}</p>}
       </div>
       <input
         ref={inputRef}

@@ -16,8 +16,8 @@ export default function MarketingPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Automated Marketing</h1>
-        <p className="text-sm text-gray-500">Set-and-forget SMS automations that bring customers back — no marketing team required.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Automated Marketing</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Set-and-forget SMS automations that bring customers back — no marketing team required.</p>
       </div>
 
       <div className="overflow-hidden rounded-2xl bg-[#121212] p-6 text-white shadow-lg sm:p-8">
@@ -40,8 +40,8 @@ export default function MarketingPage() {
               <Sparkles size={20} />
             </span>
             <div>
-              <p className="text-sm font-bold text-gray-900">🎨 Social Studio</p>
-              <p className="mt-0.5 text-sm text-gray-500">Turn any menu item into on-brand Instagram assets in one click.</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">🎨 Social Studio</p>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-white/40">Turn any menu item into on-brand Instagram assets in one click.</p>
             </div>
           </div>
           <Button icon={ArrowRight} onClick={() => navigate("/admin/marketing/social")} className="w-full sm:w-auto">
@@ -57,8 +57,8 @@ export default function MarketingPage() {
               <Crown size={20} />
             </span>
             <div>
-              <p className="text-sm font-bold text-gray-900">👑 Subscription Engine</p>
-              <p className="mt-0.5 text-sm text-gray-500">Launch a VIP plan and turn one-time customers into recurring revenue.</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">👑 Subscription Engine</p>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-white/40">Launch a VIP plan and turn one-time customers into recurring revenue.</p>
             </div>
           </div>
           <Button icon={ArrowRight} onClick={() => navigate("/admin/marketing/subscriptions")} className="w-full sm:w-auto">
@@ -83,7 +83,7 @@ export default function MarketingPage() {
           }
         />
         {shop.winBackSmsEnabled && (
-          <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
+          <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/40">
             <span className="font-mono">"Hey {"{"}first_name{"}"}, we miss you at {shop.name}! Here's 10% off your next
             order: WELCOME10. 🍕"</span>
           </div>
@@ -106,7 +106,7 @@ export default function MarketingPage() {
           }
         />
         {shop.abandonedCartSmsEnabled && (
-          <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
+          <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-xs text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/40">
             <span className="font-mono">"Still craving that order from {shop.name}? Your cart's waiting — finish up
             here: deepdish.store/{shop.slug}"</span>
           </div>

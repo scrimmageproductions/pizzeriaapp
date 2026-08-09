@@ -33,16 +33,16 @@ export default function ColumnMappingModal({ open, onClose, headers, fields, ini
         </>
       }
     >
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-white/40">
         We matched what we could. Confirm — or fix — which of your spreadsheet's columns map to each DeepDish field.
       </p>
       <div className="space-y-3">
         {fields.map((field) => (
-          <div key={field.key} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <div key={field.key} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
             <FormField label={`${field.label}${field.required ? " *" : ""}`} className="flex-1">
-              <p className="text-xs text-gray-400">DeepDish field</p>
+              <p className="text-xs text-gray-400 dark:text-white/30">DeepDish field</p>
             </FormField>
-            <ArrowRight size={16} className="mt-4 shrink-0 text-gray-300" />
+            <ArrowRight size={16} className="mt-4 shrink-0 text-gray-300 dark:text-white/20" />
             <FormField label="Your CSV column" className="flex-1">
               <Select value={mapping[field.key] ?? UNMAPPED} onChange={(e) => setField(field.key, e.target.value)}>
                 <option value={UNMAPPED}>— Not mapped —</option>

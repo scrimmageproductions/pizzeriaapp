@@ -19,11 +19,13 @@ import {
 } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { useNetworkStatus } from "../../utils/useNetworkStatus";
+import { useSound } from "../../utils/useSound";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, jitterLatLng } from "../../utils/helpers";
 import { sanitizePhone } from "../../utils/csv";
 import { TextInput } from "../shared/FormField";
 import Toast from "../shared/Toast";
+import ThemeToggle from "../shared/ThemeToggle";
 import PosPaymentModal from "./PosPaymentModal";
 
 const TAX_RATE = 0.08;
@@ -43,6 +45,7 @@ export default function PosPage() {
   const navigate = useNavigate();
   const isOnline = useNetworkStatus();
   const wasOnline = useRef(isOnline);
+  const { playTick } = useSound();
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
   const [ticket, setTicket] = useState([]);
@@ -81,6 +84,7 @@ export default function PosPage() {
   if (!shop) return <Navigate to="/onboarding" replace />;
 
   const addToTicket = (item) => {
+    playTick();
     setTicket((prev) => {
       const existing = prev.find((t) => t.id === item.id);
       if (existing) return prev.map((t) => (t.id === item.id ? { ...t, qty: t.qty + 1 } : t));
@@ -188,9 +192,9 @@ export default function PosPage() {
   const categoryItems = items.filter((i) => i.category === activeCategory);
 
   return (
-    <div className="flex h-screen flex-col bg-gray-100">
+    <div className="theme-transition flex h-screen flex-col bg-gray-100 dark:bg-[#0a0a0a]">
       <Toast show={!!toast.message} message={toast.message} icon={toast.icon} />
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
+      <div className="glass-surface flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-white/10">
         <div className="flex items-center gap-2.5">
           <span
             className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg text-white"
@@ -199,8 +203,8 @@ export default function PosPage() {
             {shop.logoUrl ? <img src={shop.logoUrl} alt="" className="h-full w-full object-cover" /> : <Pizza size={18} />}
           </span>
           <div>
-            <p className="text-sm font-extrabold leading-tight text-gray-900">{shop.name}</p>
-            <p className="text-xs leading-tight text-gray-400">Tablet POS</p>
+            <p className="text-sm font-extrabold leading-tight text-gray-900 dark:text-white">{shop.name}</p>
+            <p className="text-xs leading-tight text-gray-400 dark:text-white/40">Tablet POS</p>
           </div>
         </div>
 
@@ -221,12 +225,15 @@ export default function PosPage() {
           {isOnline ? "Online — Auto-syncing" : "Offline Mode — Queueing orders locally"}
         </motion.div>
 
-        <button
-          onClick={() => navigate("/admin")}
-          className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200"
-        >
-          <ArrowLeft size={14} /> Exit to Dashboard
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20"
+          >
+            <ArrowLeft size={14} /> Exit to Dashboard
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -238,7 +245,9 @@ export default function PosPage() {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`rounded-full px-5 py-2.5 text-sm font-bold transition ${
-                  activeCategory === cat ? "bg-gray-900 text-white" : "bg-white text-gray-600 shadow-sm hover:bg-gray-50"
+                  activeCategory === cat
+                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                    : "bg-white text-gray-600 shadow-sm hover:bg-gray-50 dark:bg-white/10 dark:text-white/60 dark:shadow-none dark:hover:bg-white/15"
                 }`}
               >
                 {cat}
@@ -247,7 +256,7 @@ export default function PosPage() {
           </div>
 
           {categoryItems.length === 0 ? (
-            <p className="py-16 text-center text-sm text-gray-400">No items in this category.</p>
+            <p className="py-16 text-center text-sm text-gray-400 dark:text-white/30">No items in this category.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {categoryItems.map((item) => (
@@ -268,24 +277,26 @@ export default function PosPage() {
 
         {/* Ticket — 30% */}
         <div
-          className={`flex w-[30%] flex-col border-l bg-white transition-colors ${
-            activeSubscriber ? "border-[#F5B700] bg-gradient-to-b from-[#F5B700]/10 to-transparent" : "border-gray-200"
+          className={`flex w-[30%] flex-col border-l bg-white transition-colors dark:bg-[#111111] ${
+            activeSubscriber
+              ? "border-[#F5B700] bg-gradient-to-b from-[#F5B700]/10 to-transparent dark:from-[#F5B700]/15"
+              : "border-gray-200 dark:border-white/10"
           }`}
         >
-          <div className="space-y-3 border-b border-gray-100 p-4">
+          <div className="space-y-3 border-b border-gray-100 p-4 dark:border-white/10">
             {activeSubscriber ? (
-              <div className="flex items-center gap-2 rounded-xl border-2 border-[#F5B700] bg-[#F5B700]/10 px-3 py-2.5">
-                <Crown size={18} className="shrink-0 text-[#B8860B]" />
+              <div className="flex items-center gap-2 rounded-xl border-2 border-[#F5B700] bg-[#F5B700]/10 px-3 py-2.5 dark:bg-[#F5B700]/15">
+                <Crown size={18} className="shrink-0 text-[#B8860B] dark:text-[#F5B700]" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-extrabold text-[#8a6600]">{activeSubscriber.name} — VIP Member</p>
-                  <p className="text-xs font-semibold text-[#B8860B]">10% subscriber discount applied</p>
+                  <p className="truncate text-sm font-extrabold text-[#8a6600] dark:text-[#F5B700]">{activeSubscriber.name} — VIP Member</p>
+                  <p className="text-xs font-semibold text-[#B8860B] dark:text-[#F5B700]/70">10% subscriber discount applied</p>
                 </div>
-                <button onClick={clearSubscriber} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#B8860B] hover:bg-[#F5B700]/20">
+                <button onClick={clearSubscriber} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#B8860B] hover:bg-[#F5B700]/20 dark:text-[#F5B700]">
                   <X size={14} />
                 </button>
               </div>
             ) : lookupOpen ? (
-              <div className="space-y-2 animate-fade-in rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <div className="space-y-2 animate-fade-in rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
                 <div className="flex gap-1.5">
                   <TextInput
                     autoFocus
@@ -297,7 +308,7 @@ export default function PosPage() {
                   />
                   <button
                     onClick={handleLookupSubscriber}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-white/80"
                   >
                     <Search size={14} />
                   </button>
@@ -306,7 +317,7 @@ export default function PosPage() {
                       setLookupOpen(false);
                       setLookupError("");
                     }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 dark:text-white/40 dark:hover:bg-white/10"
                   >
                     <X size={14} />
                   </button>
@@ -316,7 +327,7 @@ export default function PosPage() {
             ) : (
               <button
                 onClick={() => setLookupOpen(true)}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#F5B700]/50 py-2.5 text-sm font-bold text-[#B8860B] transition hover:border-[#F5B700] hover:bg-[#F5B700]/5"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#F5B700]/50 py-2.5 text-sm font-bold text-[#B8860B] transition hover:border-[#F5B700] hover:bg-[#F5B700]/5 dark:text-[#F5B700] dark:hover:bg-[#F5B700]/10"
               >
                 <Crown size={15} /> Look up Subscriber
               </button>
@@ -326,7 +337,9 @@ export default function PosPage() {
               <button
                 onClick={() => setOrderType("walkin")}
                 className={`flex items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold transition ${
-                  orderType === "walkin" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"
+                  orderType === "walkin"
+                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                    : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-white/50"
                 }`}
               >
                 <UserRound size={15} /> Walk-in
@@ -334,7 +347,9 @@ export default function PosPage() {
               <button
                 onClick={() => setOrderType("phone")}
                 className={`flex items-center justify-center gap-1.5 rounded-xl py-3 text-sm font-bold transition ${
-                  orderType === "phone" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"
+                  orderType === "phone"
+                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                    : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-white/50"
                 }`}
               >
                 <PhoneCall size={15} /> Phone Order
@@ -348,7 +363,7 @@ export default function PosPage() {
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="Customer phone number"
                 />
-                <p className="flex items-center gap-1 text-[11px] text-gray-400">
+                <p className="flex items-center gap-1 text-[11px] text-gray-400 dark:text-white/30">
                   <Smartphone size={11} /> Used to text them a live pager link — required to charge.
                 </p>
               </div>
@@ -362,7 +377,9 @@ export default function PosPage() {
                   <button
                     onClick={() => setFulfillment("pickup")}
                     className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2 text-xs font-bold transition ${
-                      fulfillment === "pickup" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500"
+                      fulfillment === "pickup"
+                        ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900"
+                        : "border-gray-200 text-gray-500 dark:border-white/15 dark:text-white/50"
                     }`}
                   >
                     <ShoppingBag size={13} /> Pickup
@@ -370,7 +387,9 @@ export default function PosPage() {
                   <button
                     onClick={() => setFulfillment("delivery")}
                     className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2 text-xs font-bold transition ${
-                      fulfillment === "delivery" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500"
+                      fulfillment === "delivery"
+                        ? "border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900"
+                        : "border-gray-200 text-gray-500 dark:border-white/15 dark:text-white/50"
                     }`}
                   >
                     <Bike size={13} /> Delivery
@@ -385,32 +404,32 @@ export default function PosPage() {
 
           <div className="flex-1 overflow-y-auto p-4">
             {ticket.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-300">
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-300 dark:text-white/15">
                 <ShoppingBag size={32} />
                 <p className="text-sm">Tap items to start a ticket</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {ticket.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 rounded-xl border border-gray-100 p-2.5">
+                  <div key={t.id} className="flex items-center gap-2 rounded-xl border border-gray-100 p-2.5 dark:border-white/10">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-gray-900">{t.name}</p>
-                      <p className="text-xs text-gray-400">{formatCurrency(t.price)} each</p>
+                      <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{t.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-white/30">{formatCurrency(t.price)} each</p>
                     </div>
                     <button
                       onClick={() => updateQty(t.id, t.qty - 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20"
                     >
                       <Minus size={13} />
                     </button>
-                    <span className="w-4 text-center text-sm font-bold">{t.qty}</span>
+                    <span className="w-4 text-center text-sm font-bold dark:text-white">{t.qty}</span>
                     <button
                       onClick={() => updateQty(t.id, t.qty + 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20"
                     >
                       <Plus size={13} />
                     </button>
-                    <button onClick={() => updateQty(t.id, 0)} className="text-gray-300 hover:text-red-500">
+                    <button onClick={() => updateQty(t.id, 0)} className="text-gray-300 hover:text-red-500 dark:text-white/20 dark:hover:text-red-400">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -419,29 +438,33 @@ export default function PosPage() {
             )}
           </div>
 
-          <div className="space-y-2 border-t border-gray-100 p-4">
-            <div className="flex justify-between text-sm text-gray-500">
+          <div className="space-y-2 border-t border-gray-100 p-4 dark:border-white/10">
+            <div className="flex justify-between text-sm text-gray-500 dark:text-white/50">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
             {vipDiscount > 0 && (
-              <div className="flex justify-between text-sm font-semibold text-[#B8860B]">
+              <div className="flex justify-between text-sm font-semibold text-[#B8860B] dark:text-[#F5B700]">
                 <span className="flex items-center gap-1">
                   <Crown size={12} /> VIP Discount (10%)
                 </span>
                 <span>-{formatCurrency(vipDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm text-gray-500">
+            <div className="flex justify-between text-sm text-gray-500 dark:text-white/50">
               <span>Tax (8%)</span>
               <span>{formatCurrency(tax)}</span>
             </div>
-            <div className="flex justify-between text-lg font-extrabold text-gray-900">
+            <div className="flex justify-between text-lg font-extrabold text-gray-900 dark:text-white">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
             <button
-              onClick={() => canCharge && setPaymentOpen(true)}
+              onClick={() => {
+                if (!canCharge) return;
+                playTick();
+                setPaymentOpen(true);
+              }}
               disabled={!canCharge}
               className="mt-2 flex w-full items-center justify-center rounded-2xl py-4 text-lg font-extrabold text-white shadow-md transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               style={{ backgroundColor: shop.primaryColor }}

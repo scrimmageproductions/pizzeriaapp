@@ -11,7 +11,7 @@ import { FormField, TextInput } from "../shared/FormField";
 
 function BrandCard({ name, slug, logoUrl, primaryColor, badge, onDelete }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#151515]">
       <div
         className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-white shadow-sm"
         style={{ backgroundColor: primaryColor }}
@@ -20,15 +20,15 @@ function BrandCard({ name, slug, logoUrl, primaryColor, badge, onDelete }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-bold text-gray-900">{name}</p>
+          <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{name}</p>
           {badge}
         </div>
-        <p className="flex items-center gap-1 truncate text-xs text-gray-500">
+        <p className="flex items-center gap-1 truncate text-xs text-gray-500 dark:text-white/40">
           <Link2 size={11} /> deepdish.store/{slug}
         </p>
       </div>
       {onDelete && (
-        <button onClick={onDelete} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600">
+        <button onClick={onDelete} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 dark:text-white/30 dark:hover:bg-red-500/10 dark:hover:text-red-400">
           <Trash2 size={15} />
         </button>
       )}
@@ -109,9 +109,9 @@ function AddBrandModal({ open, onClose }) {
               type="color"
               value={primaryColor}
               onChange={(e) => setPrimaryColor(e.target.value)}
-              className="h-11 w-11 cursor-pointer rounded-lg border border-gray-200 bg-white p-1"
+              className="h-11 w-11 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 dark:border-white/15 dark:bg-transparent"
             />
-            <span className="font-mono text-sm text-gray-600">{primaryColor}</span>
+            <span className="font-mono text-sm text-gray-600 dark:text-white/60">{primaryColor}</span>
           </div>
           <div className="mt-2 flex gap-2">
             {COLOR_SWATCHES.map((c) => (
@@ -119,8 +119,8 @@ function AddBrandModal({ open, onClose }) {
                 key={c}
                 onClick={() => setPrimaryColor(c)}
                 style={{ backgroundColor: c }}
-                className={`h-7 w-7 rounded-full ring-offset-2 transition ${
-                  primaryColor === c ? "ring-2 ring-gray-900" : "hover:scale-110"
+                className={`h-7 w-7 rounded-full ring-offset-2 transition dark:ring-offset-[#161616] ${
+                  primaryColor === c ? "ring-2 ring-gray-900 dark:ring-white" : "hover:scale-110"
                 }`}
               />
             ))}
@@ -140,8 +140,8 @@ export default function BrandsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Virtual Brands</h1>
-        <p className="text-sm text-gray-500">Run multiple storefronts out of this one kitchen — every order still lands on your single KDS.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Virtual Brands</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Run multiple storefronts out of this one kitchen — every order still lands on your single KDS.</p>
       </div>
 
       <Card
@@ -161,7 +161,7 @@ export default function BrandsPage() {
             logoUrl={shop.logoUrl}
             primaryColor={shop.primaryColor}
             badge={
-              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+              <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500 dark:bg-white/10 dark:text-white/40">
                 <ShieldCheck size={10} /> Default
               </span>
             }
@@ -179,7 +179,7 @@ export default function BrandsPage() {
         </div>
 
         {brands.length === 0 && (
-          <p className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-xs text-gray-400">
+          <p className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-xs text-gray-400 dark:border-white/10 dark:bg-white/5 dark:text-white/30">
             No virtual brands yet — add one to launch a second storefront from this kitchen.
           </p>
         )}
@@ -188,7 +188,7 @@ export default function BrandsPage() {
       <AddBrandModal open={addOpen} onClose={() => setAddOpen(false)} />
 
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Virtual Brand" maxWidth="max-w-sm">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-white/60">
           Remove <strong>{deleteTarget?.name}</strong>? Its storefront URL will stop working and the $10/mo charge is removed.
         </p>
         <div className="mt-5 flex justify-end gap-2">

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Ban,
   Bike,
@@ -22,6 +22,8 @@ import {
   X,
 } from "lucide-react";
 import { useShopState } from "../../context/ShopContext";
+import ThemeToggle from "../shared/ThemeToggle";
+import { SkeletonPage } from "../shared/Skeleton";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Overview", icon: Store },
@@ -44,25 +46,35 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }) {
   const { shop, orders } = useShopState();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
+
+  // A brief skeleton beat on every tab switch makes the app feel instantly responsive instead of
+  // hard-cutting to a blank page while the next route's data renders.
+  useEffect(() => {
+    setRouteLoading(true);
+    const timeout = setTimeout(() => setRouteLoading(false), 300);
+    return () => clearTimeout(timeout);
+  }, [location.pathname]);
 
   const activeOrderCount = orders.filter((o) => !o.completedAt).length;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 lg:hidden">
+    <div className="theme-transition flex min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
+      <div className="glass-surface fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-gray-200 px-4 lg:hidden dark:border-white/10">
         <button
           onClick={() => setMobileNavOpen(true)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-white/60 dark:hover:bg-white/10"
         >
           <Menu size={20} />
         </button>
-        <span className="text-sm font-bold text-gray-900">{shop.name}</span>
-        <span className="w-9" />
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{shop.name}</span>
+        <ThemeToggle />
       </div>
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-[#121212] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`glass-surface-dark fixed inset-y-0 left-0 z-40 flex w-72 flex-col transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileNavOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -132,17 +144,18 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        <div className="border-t border-white/10 px-5 py-4">
+        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-5 py-4">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-white/40">
             <Ban size={12} /> 0% commission, always
           </p>
+          <ThemeToggle />
         </div>
       </aside>
 
       {mobileNavOpen && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileNavOpen(false)} />}
 
       <main className="flex-1 px-4 pb-16 pt-20 sm:px-6 lg:px-10 lg:pt-8">
-        <div className="mx-auto max-w-5xl">{children}</div>
+        <div className="mx-auto max-w-5xl">{routeLoading ? <SkeletonPage /> : children}</div>
       </main>
     </div>
   );

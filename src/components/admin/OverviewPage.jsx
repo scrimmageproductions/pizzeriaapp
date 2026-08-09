@@ -35,8 +35,8 @@ export default function OverviewPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <Card title={`Welcome back, ${shop.name}`} description="Here's your live ordering site." icon={Link2}>
-        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center">
-          <p className="flex-1 truncate font-mono text-sm text-gray-700">{publicUrl}</p>
+        <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center dark:border-white/10 dark:bg-white/5">
+          <p className="flex-1 truncate font-mono text-sm text-gray-700 dark:text-white/70">{publicUrl}</p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" icon={copied ? Check : Copy} onClick={handleCopy}>
               {copied ? "Copied!" : "Copy Link"}
@@ -60,8 +60,8 @@ export default function OverviewPage() {
               <TrendingUp size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{formatCurrency(totalSales)}</p>
-              <p className="text-xs text-gray-500">Total sales this month</p>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{formatCurrency(totalSales)}</p>
+              <p className="text-xs text-gray-500 dark:text-white/40">Total sales this month</p>
             </div>
           </div>
         </Card>
@@ -71,8 +71,8 @@ export default function OverviewPage() {
               <LayoutGrid size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{activeOrderCount}</p>
-              <p className="text-xs text-gray-500">Active orders</p>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{activeOrderCount}</p>
+              <p className="text-xs text-gray-500 dark:text-white/40">Active orders</p>
             </div>
           </div>
         </Card>
@@ -82,8 +82,8 @@ export default function OverviewPage() {
               <Users size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{customers.length}</p>
-              <p className="text-xs text-gray-500">Customers in your CRM</p>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{customers.length}</p>
+              <p className="text-xs text-gray-500 dark:text-white/40">Customers in your CRM</p>
             </div>
           </div>
         </Card>
@@ -117,8 +117,8 @@ export default function OverviewPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E31837]/10 text-[#E31837]">
                 <Icon size={18} />
               </span>
-              <p className="mt-3 text-sm font-bold text-gray-900">{p.label}</p>
-              <p className="mt-1 text-xs text-gray-500">{p.description}</p>
+              <p className="mt-3 text-sm font-bold text-gray-900 dark:text-white">{p.label}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-white/40">{p.description}</p>
             </Card>
           );
         })}

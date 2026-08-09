@@ -7,8 +7,8 @@ export default function Toggle({ checked, onChange, label, description, disabled
     >
       {(label || description) && (
         <span className="flex flex-col">
-          {label && <span className="text-sm font-semibold text-gray-800">{label}</span>}
-          {description && <span className="text-xs text-gray-500">{description}</span>}
+          {label && <span className="text-sm font-semibold text-gray-800 dark:text-white/90">{label}</span>}
+          {description && <span className="text-xs text-gray-500 dark:text-white/40">{description}</span>}
         </span>
       )}
       <button
@@ -16,7 +16,7 @@ export default function Toggle({ checked, onChange, label, description, disabled
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
-          checked ? "bg-[#00A651]" : "bg-gray-300"
+          checked ? "bg-[#00A651]" : "bg-gray-300 dark:bg-white/15"
         }`}
         aria-pressed={checked}
       >

@@ -63,13 +63,13 @@ export default function SocialStudioPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">🎨 Social Studio</h1>
-        <p className="text-sm text-gray-500">The Canva of POS — turn any menu item into ready-to-post Instagram content.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">🎨 Social Studio</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">The Canva of POS — turn any menu item into ready-to-post Instagram content.</p>
       </div>
 
       <Card title="Generate Assets" description="Pick a menu item and we'll build three on-brand templates instantly." icon={Sparkles}>
         {items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-gray-400">Add items to your menu first — then come back here.</p>
+          <p className="py-6 text-center text-sm text-gray-400 dark:text-white/30">Add items to your menu first — then come back here.</p>
         ) : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
@@ -101,7 +101,7 @@ export default function SocialStudioPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-white/70">Now at {shop.name}</p>
               </div>
             </TemplateFrame>
-            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400">The Teaser</p>
+            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-white/30">The Teaser</p>
             <Button variant="outline" icon={Download} className="w-full" onClick={() => handleDownload(teaserRef, `${generatedItem.name}-teaser.png`)}>
               Download to Post
             </Button>
@@ -125,7 +125,7 @@ export default function SocialStudioPage() {
                 </div>
               </div>
             </TemplateFrame>
-            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400">The Review</p>
+            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-white/30">The Review</p>
             <Button variant="outline" icon={Download} className="w-full" onClick={() => handleDownload(reviewRef, `${generatedItem.name}-review.png`)}>
               Download to Post
             </Button>
@@ -146,7 +146,7 @@ export default function SocialStudioPage() {
                 </div>
               </div>
             </TemplateFrame>
-            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400">The Promo</p>
+            <p className="text-center text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-white/30">The Promo</p>
             <Button variant="outline" icon={Download} className="w-full" onClick={() => handleDownload(promoRef, `${generatedItem.name}-promo.png`)}>
               Download to Post
             </Button>

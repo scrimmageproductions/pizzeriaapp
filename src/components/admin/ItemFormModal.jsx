@@ -61,7 +61,7 @@ export default function ItemFormModal({ open, onClose, onSave, initialItem }) {
             </Select>
           </FormField>
         </div>
-        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-white/10">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>

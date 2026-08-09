@@ -47,7 +47,7 @@ function CreatePlanModal({ open, onClose }) {
         <FormField label="Monthly Price">
           <TextInput type="number" min="0" step="0.01" value={monthlyPrice} onChange={(e) => setMonthlyPrice(e.target.value)} placeholder="59.99" />
         </FormField>
-        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+        <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/5">
           <Toggle checked={rewardEnabled} onChange={setRewardEnabled} label="Include a weekly reward" description="Shown to customers on the storefront upsell." />
           {rewardEnabled && (
             <TextInput
@@ -73,8 +73,8 @@ export default function SubscriptionsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Subscription Engine</h1>
-        <p className="text-sm text-gray-500">Give your regulars a reason to pay you monthly, not just per order.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Subscription Engine</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Give your regulars a reason to pay you monthly, not just per order.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -84,8 +84,8 @@ export default function SubscriptionsPage() {
               <Users size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{subscribers.length}</p>
-              <p className="text-xs text-gray-500">Active Subscribers</p>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{subscribers.length}</p>
+              <p className="text-xs text-gray-500 dark:text-white/40">Active Subscribers</p>
             </div>
           </div>
         </Card>
@@ -95,8 +95,8 @@ export default function SubscriptionsPage() {
               <DollarSign size={20} />
             </span>
             <div>
-              <p className="text-2xl font-extrabold text-gray-900">{formatCurrency(mrr)}</p>
-              <p className="text-xs text-gray-500">Total MRR</p>
+              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">{formatCurrency(mrr)}</p>
+              <p className="text-xs text-gray-500 dark:text-white/40">Total MRR</p>
             </div>
           </div>
         </Card>
@@ -122,7 +122,7 @@ export default function SubscriptionsPage() {
             {subscriptionPlan.reward && <p className="mt-1 text-sm text-white/60">Includes: {subscriptionPlan.reward}</p>}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400">
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400 dark:text-white/30">
             <Sparkles size={28} />
             <p className="text-sm">No subscription plan yet.</p>
           </div>
@@ -131,7 +131,7 @@ export default function SubscriptionsPage() {
 
       <Card title="Active Subscribers" description="Recognized instantly at the POS and on the KDS with a gold crown.">
         {subscribers.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400">
+          <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-400 dark:text-white/30">
             <Crown size={28} />
             <p className="text-sm">No VIP subscribers yet.</p>
           </div>
@@ -139,7 +139,7 @@ export default function SubscriptionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[480px] text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400">
+                <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400 dark:border-white/10 dark:text-white/30">
                   <th className="pb-3 pr-4">Name</th>
                   <th className="pb-3 pr-4">Phone</th>
                   <th className="pb-3 text-right">Lifetime Value</th>
@@ -147,14 +147,14 @@ export default function SubscriptionsPage() {
               </thead>
               <tbody>
                 {subscribers.map((c) => (
-                  <tr key={c.id} className="border-b border-gray-50 last:border-0">
-                    <td className="py-3 pr-4 font-semibold text-gray-900">
+                  <tr key={c.id} className="border-b border-gray-50 last:border-0 dark:border-white/5">
+                    <td className="py-3 pr-4 font-semibold text-gray-900 dark:text-white">
                       <span className="flex items-center gap-1.5">
                         <Crown size={13} className="text-[#F5B700]" /> {c.name}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 text-gray-600">{c.phone}</td>
-                    <td className="py-3 text-right font-bold text-gray-900">{formatCurrency(c.lifetimeValue)}</td>
+                    <td className="py-3 pr-4 text-gray-600 dark:text-white/60">{c.phone}</td>
+                    <td className="py-3 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(c.lifetimeValue)}</td>
                   </tr>
                 ))}
               </tbody>

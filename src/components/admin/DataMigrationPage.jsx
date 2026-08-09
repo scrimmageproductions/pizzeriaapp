@@ -81,8 +81,8 @@ export default function DataMigrationPage() {
       <Toast show={!!toast} message={toast} icon={Database} />
 
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">Data & Migration</h1>
-        <p className="text-sm text-gray-500">Bring your spreadsheets in, no reformatting required — and take your data back out any time.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Data & Migration</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Bring your spreadsheets in, no reformatting required — and take your data back out any time.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -168,8 +168,8 @@ export default function DataMigrationPage() {
 
         <Card title="Export Payroll & Timesheets" description="Shift hours, cash tips, and driver mileage in one CSV." icon={Download}>
           <div className="space-y-3">
-            <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-500">
-              <p className="font-semibold text-gray-700">{shiftReports.length} shift reports · {driverCashouts.length} driver cashouts</p>
+            <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-500 dark:bg-white/5 dark:text-white/40">
+              <p className="font-semibold text-gray-700 dark:text-white/70">{shiftReports.length} shift reports · {driverCashouts.length} driver cashouts</p>
               <p className="mt-1">Columns: Employee Name, Date, Hours Worked, Cash Tips, Mileage Owed.</p>
             </div>
             <Button variant="primary" icon={Download} className="w-full" onClick={handleExportPayroll} disabled={shiftReports.length === 0 && driverCashouts.length === 0}>
@@ -184,7 +184,7 @@ export default function DataMigrationPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400">
+                <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400 dark:border-white/10 dark:text-white/30">
                   <th className="pb-3 pr-4">Item</th>
                   <th className="pb-3 pr-4 text-right">Quantity</th>
                   <th className="pb-3 pr-4">Unit</th>
@@ -193,11 +193,11 @@ export default function DataMigrationPage() {
               </thead>
               <tbody>
                 {inventory.map((i) => (
-                  <tr key={i.id} className="border-b border-gray-50 last:border-0">
-                    <td className="py-3 pr-4 font-semibold text-gray-900">{i.name}</td>
-                    <td className="py-3 pr-4 text-right text-gray-600">{i.quantity}</td>
-                    <td className="py-3 pr-4 text-gray-600">{i.unitType}</td>
-                    <td className="py-3 text-right font-bold text-gray-900">{formatCurrency(i.vendorCost)}</td>
+                  <tr key={i.id} className="border-b border-gray-50 last:border-0 dark:border-white/5">
+                    <td className="py-3 pr-4 font-semibold text-gray-900 dark:text-white">{i.name}</td>
+                    <td className="py-3 pr-4 text-right text-gray-600 dark:text-white/60">{i.quantity}</td>
+                    <td className="py-3 pr-4 text-gray-600 dark:text-white/60">{i.unitType}</td>
+                    <td className="py-3 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(i.vendorCost)}</td>
                   </tr>
                 ))}
               </tbody>

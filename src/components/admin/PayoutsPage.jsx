@@ -18,18 +18,18 @@ export default function PayoutsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900">🏦 Bank & Payouts</h1>
-        <p className="text-sm text-gray-500">Exactly when your money lands — for every POS and online order.</p>
+        <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">🏦 Bank & Payouts</h1>
+        <p className="text-sm text-gray-500 dark:text-white/40">Exactly when your money lands — for every POS and online order.</p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-[#141414]">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#00A651]/10 text-[#00A651]">
             <ShieldCheck size={20} />
           </span>
           <div>
-            <p className="text-sm font-extrabold text-gray-900">Connected Account: {shop.name} (Active)</p>
-            <p className="text-xs text-gray-500">Payouts powered by Stripe Connect · bank ••••4821</p>
+            <p className="text-sm font-extrabold text-gray-900 dark:text-white">Connected Account: {shop.name} (Active)</p>
+            <p className="text-xs text-gray-500 dark:text-white/40">Payouts powered by Stripe Connect · bank ••••4821</p>
           </div>
         </div>
         <Button variant="outline" icon={Landmark}>
@@ -56,7 +56,7 @@ export default function PayoutsPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400">
+              <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wide text-gray-400 dark:border-white/10 dark:text-white/30">
                 <th className="pb-3 pr-4">Date</th>
                 <th className="pb-3 pr-4 text-right">Gross Processing</th>
                 <th className="pb-3 pr-4 text-right">Platform Fees</th>
@@ -67,12 +67,12 @@ export default function PayoutsPage() {
             </thead>
             <tbody>
               {LEDGER.map((row) => (
-                <tr key={row.date} className="border-b border-gray-50 last:border-0">
-                  <td className="py-3 pr-4 font-semibold text-gray-900">{row.date}</td>
-                  <td className="py-3 pr-4 text-right text-gray-600">{formatCurrency(row.gross)}</td>
+                <tr key={row.date} className="border-b border-gray-50 last:border-0 dark:border-white/5">
+                  <td className="py-3 pr-4 font-semibold text-gray-900 dark:text-white">{row.date}</td>
+                  <td className="py-3 pr-4 text-right text-gray-600 dark:text-white/60">{formatCurrency(row.gross)}</td>
                   <td className="py-3 pr-4 text-right font-bold text-[#00A651]">{formatCurrency(row.platformFee)}</td>
-                  <td className="py-3 pr-4 text-right text-gray-600">-{formatCurrency(row.ccFee)}</td>
-                  <td className="py-3 pr-4 text-right font-bold text-gray-900">{formatCurrency(row.net)}</td>
+                  <td className="py-3 pr-4 text-right text-gray-600 dark:text-white/60">-{formatCurrency(row.ccFee)}</td>
+                  <td className="py-3 pr-4 text-right font-bold text-gray-900 dark:text-white">{formatCurrency(row.net)}</td>
                   <td className="py-3 text-right">
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -88,7 +88,7 @@ export default function PayoutsPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-4 text-xs text-gray-400">
+        <p className="mt-4 text-xs text-gray-400 dark:text-white/30">
           Platform Fees are $0.00 on every payout — DeepDish never takes a cut of your sales.
         </p>
       </Card>

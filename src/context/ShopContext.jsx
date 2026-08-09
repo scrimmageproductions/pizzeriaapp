@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import { loadState, saveState, STORAGE_KEY } from "../utils/storage";
-import { uid } from "../utils/helpers";
+import { slugify, uid } from "../utils/helpers";
 import { buildMockCustomers, buildSeedFeedback, buildSeedOrders } from "../data/mockCrm";
 import { buildSeedPayroll } from "../data/mockPayroll";
 
@@ -19,6 +19,8 @@ const DEFAULT_STATE = {
   driverCashouts: [],
   offlineOrderQueue: [], // order ids taken while offline, waiting to sync once connectivity returns
   scheduledOrders: [], // catering/pre-orders held back from the KDS until 2 hours before the event
+  brands: [], // additional Ghost Kitchen virtual brands sharing this kitchen's menu, each with its own storefront URL
+  subscriptionPlan: null, // the shop's single active VIP subscription plan, if any
 };
 
 const LOYALTY_SIGNUP_POINTS = 42;
@@ -128,6 +130,7 @@ function reducer(state, action) {
             lastOrderAt: Date.now(),
             accountStatus: "guest", // walk-up/phone orders start as guests until they claim their loyalty points
             points: 0,
+            isSubscriber: false,
           },
           ...state.customers,
         ],
@@ -184,6 +187,7 @@ function reducer(state, action) {
             lastOrderAt: Date.now(),
             accountStatus: "registered", // migrated-in customers already have a relationship with the shop, not a walk-up guest
             points: 0,
+            isSubscriber: false,
           })),
           ...state.customers,
         ],
@@ -241,6 +245,61 @@ function reducer(state, action) {
       }));
 
       return { ...state, orders: [...promoted, ...state.orders], scheduledOrders: stillScheduled };
+    }
+
+    // Ghost Kitchen: additional virtual brands sharing this kitchen's menu, each with its own storefront URL.
+    case "ADD_BRAND": {
+      const { name, logoUrl, primaryColor } = action.payload;
+      const base = slugify(name) || "brand";
+      const taken = new Set([state.shop?.slug, ...state.brands.map((b) => b.slug)].filter(Boolean));
+      let candidate = base;
+      let i = 2;
+      while (taken.has(candidate)) candidate = `${base}-${i++}`;
+      return {
+        ...state,
+        brands: [
+          ...state.brands,
+          { id: uid("brand"), name, slug: candidate, logoUrl: logoUrl || "", primaryColor: primaryColor || "#E31837", createdAt: Date.now() },
+        ],
+      };
+    }
+
+    case "DELETE_BRAND":
+      return { ...state, brands: state.brands.filter((b) => b.id !== action.payload.id) };
+
+    // Subscription Engine: a single active VIP plan the shop is running right now.
+    case "SET_SUBSCRIPTION_PLAN":
+      return { ...state, subscriptionPlan: { id: uid("plan"), createdAt: Date.now(), ...action.payload } };
+
+    // Storefront upsell (mock Stripe checkout) or POS lookup both funnel through here.
+    case "SUBSCRIBE_CUSTOMER": {
+      const { name, email, phone } = action.payload;
+      const phoneKey = phone?.trim();
+      const existing = phoneKey && state.customers.find((c) => c.phone === phoneKey);
+      if (existing) {
+        return {
+          ...state,
+          customers: state.customers.map((c) => (c.id === existing.id ? { ...c, isSubscriber: true } : c)),
+        };
+      }
+      return {
+        ...state,
+        customers: [
+          {
+            id: uid("cust"),
+            name: name || "VIP Member",
+            email: email || "",
+            phone: phoneKey || "",
+            totalOrders: 0,
+            lifetimeValue: 0,
+            lastOrderAt: Date.now(),
+            accountStatus: "registered",
+            points: 0,
+            isSubscriber: true,
+          },
+          ...state.customers,
+        ],
+      };
     }
 
     case "_HYDRATE":
@@ -305,6 +364,12 @@ export function ShopProvider({ children }) {
       syncOfflineQueue: () => dispatch({ type: "SYNC_OFFLINE_QUEUE" }),
 
       addScheduledOrder: (order) => dispatch({ type: "ADD_SCHEDULED_ORDER", payload: order }),
+
+      addBrand: (payload) => dispatch({ type: "ADD_BRAND", payload }),
+      deleteBrand: (id) => dispatch({ type: "DELETE_BRAND", payload: { id } }),
+
+      setSubscriptionPlan: (payload) => dispatch({ type: "SET_SUBSCRIPTION_PLAN", payload }),
+      subscribeCustomer: (payload) => dispatch({ type: "SUBSCRIBE_CUSTOMER", payload }),
     }),
     []
   );

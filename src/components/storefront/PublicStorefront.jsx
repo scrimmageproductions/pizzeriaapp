@@ -9,11 +9,12 @@ import MenuList from "./MenuList";
 import CartDrawer from "./CartDrawer";
 import CheckoutModal from "./CheckoutModal";
 import OrderTracker from "./OrderTracker";
+import VipUpsellBanner from "./VipUpsellBanner";
 
 export default function PublicStorefront() {
   const { slug } = useParams();
-  const { shop, items, orders } = useShopState();
-  const { addOrder, upsertCustomer } = useShopActions();
+  const { shop, items, orders, brands, customers, subscriptionPlan } = useShopState();
+  const { addOrder, upsertCustomer, subscribeCustomer } = useShopActions();
 
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -21,7 +22,10 @@ export default function PublicStorefront() {
   const [checkoutTotals, setCheckoutTotals] = useState(null);
   const [activeOrderId, setActiveOrderId] = useState(null);
 
-  if (!shop || shop.slug !== slug) {
+  const isDefaultBrand = shop && shop.slug === slug;
+  const virtualBrand = shop && !isDefaultBrand ? brands.find((b) => b.slug === slug) : null;
+
+  if (!shop || !(isDefaultBrand || virtualBrand)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#F8F9FA] px-6 text-center">
         <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-200 text-gray-400">
@@ -32,6 +36,12 @@ export default function PublicStorefront() {
       </div>
     );
   }
+
+  // Ghost Kitchen: a virtual brand's storefront shares the parent's menu, hours, and kitchen —
+  // it only swaps in its own name/logo/color so customers never see the "real" account name.
+  const displayShop = virtualBrand
+    ? { ...shop, name: virtualBrand.name, slug: virtualBrand.slug, logoUrl: virtualBrand.logoUrl, primaryColor: virtualBrand.primaryColor }
+    : shop;
 
   const activeOrder = orders.find((o) => o.id === activeOrderId);
 
@@ -58,6 +68,7 @@ export default function PublicStorefront() {
   const placeOrder = ({ customerName, email, phone, fulfillment, address }) => {
     const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
     const destination = fulfillment === "delivery" ? jitterLatLng(shop.lat, shop.lng) : { lat: null, lng: null };
+    const subscriberMatch = customers.find((c) => c.phone === phone.trim() && c.isSubscriber);
     const order = {
       id: orderId,
       customerName,
@@ -77,6 +88,8 @@ export default function PublicStorefront() {
       dispatchedAt: null,
       lat: destination.lat,
       lng: destination.lng,
+      ...(virtualBrand && { brandId: virtualBrand.id, brandName: virtualBrand.name, brandColor: virtualBrand.primaryColor }),
+      isSubscriberOrder: !!subscriberMatch,
     };
     addOrder(order);
     upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });
@@ -85,28 +98,34 @@ export default function PublicStorefront() {
     setCheckoutOpen(false);
   };
 
-  const fontFamily = FONT_OPTIONS.find((f) => f.id === shop.font)?.family;
+  const handleSubscribe = ({ name, phone }) => {
+    subscribeCustomer({ name, phone });
+  };
+
+  const fontFamily = FONT_OPTIONS.find((f) => f.id === displayShop.font)?.family;
 
   if (activeOrder) {
-    return <OrderTracker order={activeOrder} shop={shop} onNewOrder={() => setActiveOrderId(null)} />;
+    return <OrderTracker order={activeOrder} shop={displayShop} onNewOrder={() => setActiveOrderId(null)} />;
   }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]" style={{ fontFamily }}>
-      <StorefrontHeader shop={shop} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
+      <StorefrontHeader shop={displayShop} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
 
-      {!shop.acceptingOrders && (
+      {!displayShop.acceptingOrders && (
         <div className="mx-auto mt-4 flex max-w-3xl items-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-600">
           <PauseCircle size={16} />
           We're not accepting online orders right now — please check back soon!
         </div>
       )}
 
+      {subscriptionPlan && <VipUpsellBanner shop={displayShop} plan={subscriptionPlan} onSubscribe={handleSubscribe} />}
+
       <MenuList
         items={items}
-        primaryColor={shop.primaryColor}
+        primaryColor={displayShop.primaryColor}
         onAddToCart={addToCart}
-        disabled={!shop.acceptingOrders}
+        disabled={!displayShop.acceptingOrders}
       />
 
       <CartDrawer
@@ -115,7 +134,7 @@ export default function PublicStorefront() {
         cart={cart}
         onUpdateQty={updateQty}
         onRemove={removeItem}
-        primaryColor={shop.primaryColor}
+        primaryColor={displayShop.primaryColor}
         onCheckout={openCheckout}
       />
 
@@ -123,7 +142,7 @@ export default function PublicStorefront() {
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
         totals={checkoutTotals || { subtotal: 0, tax: 0, total: 0 }}
-        primaryColor={shop.primaryColor}
+        primaryColor={displayShop.primaryColor}
         onPlaceOrder={placeOrder}
       />
     </div>

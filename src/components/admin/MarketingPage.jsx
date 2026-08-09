@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, MessageSquareText, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Crown, MessageSquareText, Sparkles, TrendingUp } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { formatCurrency } from "../../utils/helpers";
 import Card from "../shared/Card";
@@ -46,6 +46,23 @@ export default function MarketingPage() {
           </div>
           <Button icon={ArrowRight} onClick={() => navigate("/admin/marketing/social")} className="w-full sm:w-auto">
             Open Social Studio
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F5B700]/10 text-[#F5B700]">
+              <Crown size={20} />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-gray-900">👑 Subscription Engine</p>
+              <p className="mt-0.5 text-sm text-gray-500">Launch a VIP plan and turn one-time customers into recurring revenue.</p>
+            </div>
+          </div>
+          <Button icon={ArrowRight} onClick={() => navigate("/admin/marketing/subscriptions")} className="w-full sm:w-auto">
+            Open Subscriptions
           </Button>
         </div>
       </Card>

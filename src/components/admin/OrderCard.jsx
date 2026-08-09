@@ -1,4 +1,4 @@
-import { Bike, CalendarClock, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
+import { Bike, CalendarClock, CheckCircle2, Clock, Crown, MapPin, ShoppingBag, Store, User } from "lucide-react";
 import { useShopActions } from "../../context/ShopContext";
 import Button from "../shared/Button";
 import ProgressRing from "../shared/ProgressRing";
@@ -20,11 +20,20 @@ export default function OrderCard({ order, now, accentColor }) {
           <CalendarClock size={13} /> Catering — Due at {formatClockTime(order.eventAt)}
         </div>
       )}
+      {order.brandName && (
+        <div
+          className="mb-3 flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-xs font-extrabold uppercase tracking-wide text-white"
+          style={{ backgroundColor: order.brandColor || "#E31837" }}
+        >
+          <Store size={13} /> {order.brandName}
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-extrabold text-gray-900">{order.id}</p>
           <p className="flex items-center gap-1 text-xs text-gray-500">
             <User size={11} /> {order.customerName}
+            {order.isSubscriberOrder && <Crown size={12} className="text-[#F5B700]" />}
           </p>
         </div>
         <span className="flex items-center gap-1 text-xs text-gray-500">

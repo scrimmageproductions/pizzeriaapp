@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, ScanText, Tags, Trash2 } from "lucide-react";
 import { CATEGORIES } from "../../data/menuScan";
 import { uid } from "../../utils/helpers";
@@ -53,6 +53,14 @@ export default function ScannedMenuReviewModal({ open, parsedItems, onClose, onI
     if (open) setDraftItems(toDraftItems(parsedItems));
   }, [open, parsedItems]);
 
+  // Claude Vision reads real category headers off the menu (Appetizers, Salads, Pasta…), which
+  // outgrows the small fixed CATEGORIES list — offer those alongside it so the dropdown reflects
+  // what was actually detected instead of silently showing no selection.
+  const categoryOptions = useMemo(() => {
+    const detected = draftItems.map((d) => d.category).filter(Boolean);
+    return Array.from(new Set([...CATEGORIES, ...detected]));
+  }, [draftItems]);
+
   const updateItem = (id, changes) => setDraftItems((prev) => prev.map((d) => (d.id === id ? { ...d, ...changes } : d)));
   const removeItem = (id) => setDraftItems((prev) => prev.filter((d) => d.id !== id));
   const addItem = () => setDraftItems((prev) => [...prev, blankDraftItem()]);
@@ -101,7 +109,7 @@ export default function ScannedMenuReviewModal({ open, parsedItems, onClose, onI
                 </FormField>
                 <FormField label="Category">
                   <Select value={item.category} onChange={(e) => updateItem(item.id, { category: e.target.value })}>
-                    {CATEGORIES.map((c) => (
+                    {categoryOptions.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>

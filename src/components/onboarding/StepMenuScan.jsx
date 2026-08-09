@@ -1,63 +1,56 @@
-import { useState } from "react";
-import { createWorker, PSM } from "tesseract.js";
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, ScanLine } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, ArrowRight, CheckCircle2, ScanLine } from "lucide-react";
 import { formatItemPrice } from "../../utils/helpers";
-import { preprocessImageForOCR } from "../../utils/imageProcessing";
-import { parseMenuText } from "../../utils/menuParser";
+import { MenuScanError, scanMenuWithVision } from "../../utils/visionScanner";
 import Dropzone from "../shared/Dropzone";
 import Button from "../shared/Button";
 import ScannedMenuReviewModal from "./ScannedMenuReviewModal";
 
-const SCAN_STAGES = ["Preprocessing image…", "Reading your menu (OCR)…", "Finding items & prices…"];
+const LOADING_MESSAGES = ["Claude is reading the layout…", "Extracting prices & sizes…", "Categorizing items…", "Finalizing menu…"];
 
 export default function StepMenuScan({ primaryColor, onImport, onNext }) {
   const [phase, setPhase] = useState("idle"); // idle -> scanning -> review -> done
-  const [stageIndex, setStageIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [thumbnail, setThumbnail] = useState(null);
+  const [messageIndex, setMessageIndex] = useState(0);
   const [error, setError] = useState(null);
   const [parsedItems, setParsedItems] = useState([]);
   const [importedItems, setImportedItems] = useState([]);
+  const intervalRef = useRef(null);
+  const thumbnailUrlRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      clearInterval(intervalRef.current);
+      if (thumbnailUrlRef.current) URL.revokeObjectURL(thumbnailUrlRef.current);
+    },
+    []
+  );
 
   const runScan = async (file) => {
     setPhase("scanning");
     setError(null);
-    setStageIndex(0);
-    setProgress(0);
+    setMessageIndex(0);
+    if (thumbnailUrlRef.current) URL.revokeObjectURL(thumbnailUrlRef.current);
+    thumbnailUrlRef.current = URL.createObjectURL(file);
+    setThumbnail(thumbnailUrlRef.current);
 
-    let worker;
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setMessageIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 1500);
+
     try {
-      const dataUrl = await preprocessImageForOCR(file);
-      setStageIndex(1);
-
-      worker = await createWorker("eng", 1, {
-        // Self-hosted rather than the default jsdelivr CDN — keeps the scanner from depending on
-        // a third-party CDN's uptime and avoids CSP/network issues in locked-down environments.
-        workerPath: "/tesseract/worker.min.js",
-        workerBlobURL: false, // needed so the worker's own location resolves the co-located .wasm file correctly
-        corePath: "/tesseract/tesseract-core-lstm.js",
-        langPath: "/tesseract-lang",
-        logger: (m) => {
-          if (m.status === "recognizing text") setProgress(m.progress);
-        },
-      });
-      // Sparse text mode — Tesseract's default page-segmentation assumes one uniform block of
-      // prose and blindly reads across multi-column menu layouts as if they were a single
-      // sentence. SPARSE_TEXT instead finds text fragments wherever they sit on the page.
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-      const {
-        data: { text },
-      } = await worker.recognize(dataUrl);
-
-      setStageIndex(2);
-      const parsed = parseMenuText(text);
-      setParsedItems(parsed);
+      const items = await scanMenuWithVision(file);
+      setParsedItems(items);
       setPhase("review");
     } catch (err) {
       console.error("Menu scan failed", err);
-      setError("Couldn't read that image. Try a clearer, well-lit photo — or add items manually.");
+      const message = err instanceof MenuScanError ? err.message : "Couldn't read that image. Try a clearer, well-lit photo — or add items manually.";
+      setError(message);
       setPhase("idle");
     } finally {
-      if (worker) await worker.terminate();
+      clearInterval(intervalRef.current);
     }
   };
 
@@ -76,7 +69,7 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
         <ScanLine size={28} />
       </span>
       <h1 className="mt-6 text-3xl font-extrabold text-gray-900 sm:text-4xl">Paper to digital</h1>
-      <p className="mt-2 text-gray-500">Snap a photo of your paper menu — our OCR engine reads it and builds your digital menu.</p>
+      <p className="mt-2 text-gray-500">Snap a photo of your paper menu — Claude reads it and builds your digital menu.</p>
 
       <div className="mt-8 w-full">
         {phase === "idle" && (
@@ -95,34 +88,33 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
 
         {phase === "scanning" && (
           <div className="flex flex-col items-center gap-6 rounded-3xl border-2 border-dashed border-gray-200 py-10">
-            <div className="relative flex h-16 w-16 items-center justify-center">
-              <span className="absolute inset-0 animate-ping rounded-2xl" style={{ backgroundColor: `${primaryColor}30` }} />
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-2xl text-white"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Loader2 size={24} className="animate-spin" />
-              </span>
+            <div className="relative h-40 w-32 overflow-hidden rounded-2xl shadow-lg">
+              {thumbnail && <img src={thumbnail} alt="Your menu" className="h-full w-full object-cover" />}
+              <div className="absolute inset-0 bg-black/10" />
+              <motion.div
+                className="absolute inset-x-0 h-10"
+                style={{
+                  background: `linear-gradient(180deg, transparent, ${primaryColor}bb, transparent)`,
+                  boxShadow: `0 0 16px 2px ${primaryColor}99`,
+                }}
+                animate={{ top: ["-10%", "95%", "-10%"] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              />
             </div>
-            <div className="space-y-2">
-              {SCAN_STAGES.map((step, i) => (
-                <div
-                  key={step}
-                  className={`flex items-center gap-2 text-sm transition ${i <= stageIndex ? "text-gray-800" : "text-gray-300"}`}
+
+            <div className="h-5">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={messageIndex}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.25 }}
+                  className="text-sm font-semibold text-gray-700"
                 >
-                  {i < stageIndex ? (
-                    <CheckCircle2 size={16} className="text-[#00A651]" />
-                  ) : i === stageIndex ? (
-                    <Loader2 size={16} className="animate-spin" style={{ color: primaryColor }} />
-                  ) : (
-                    <span className="h-4 w-4 rounded-full border-2 border-gray-200" />
-                  )}
-                  {step}
-                  {i === 1 && i === stageIndex && progress > 0 && (
-                    <span className="text-xs text-gray-400">{Math.round(progress * 100)}%</span>
-                  )}
-                </div>
-              ))}
+                  {LOADING_MESSAGES[messageIndex]}
+                </motion.p>
+              </AnimatePresence>
             </div>
           </div>
         )}

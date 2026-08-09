@@ -38,14 +38,16 @@ export default function LoyaltySettingsCard() {
         </div>
         <div className="flex shrink-0 items-center gap-2 text-sm font-bold text-gray-700">
           $1 =
-          <TextInput
-            type="number"
-            min="0"
-            step="0.5"
-            value={loyalty.pointsPerDollar}
-            onChange={(e) => updateLoyaltySettings({ pointsPerDollar: Number(e.target.value) || 0 })}
-            className="w-16 text-center"
-          />
+          <div className="w-16 shrink-0">
+            <TextInput
+              type="number"
+              min="0"
+              step="0.5"
+              value={loyalty.pointsPerDollar}
+              onChange={(e) => updateLoyaltySettings({ pointsPerDollar: Number(e.target.value) || 0 })}
+              className="text-center"
+            />
+          </div>
           pts
         </div>
       </div>

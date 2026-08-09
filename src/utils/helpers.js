@@ -15,6 +15,17 @@ export function formatCurrency(amount) {
   return `$${amount.toFixed(2)}`;
 }
 
+/** Menu items may carry a single flat price OR a list of size variants — never both. */
+export function formatItemPrice(item) {
+  if (item.sizes && item.sizes.length > 0) {
+    const prices = item.sizes.map((s) => s.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return min === max ? formatCurrency(min) : `${formatCurrency(min)} – ${formatCurrency(max)}`;
+  }
+  return item.price != null ? formatCurrency(item.price) : "—";
+}
+
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bike, Camera, Minus, PhoneCall, Pizza, Plus, ShoppingBag, Trash2, UserRound, X } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
-import { formatCurrency, jitterLatLng } from "../../utils/helpers";
+import { formatCurrency, formatItemPrice, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
 import PosPaymentModal from "./PosPaymentModal";
 import PaperTicketModal from "./PaperTicketModal";
@@ -166,18 +166,46 @@ export default function PosPage() {
             <p className="py-16 text-center text-sm text-gray-400">No items in this category.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-              {categoryItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => addToTicket(item)}
-                  className={`flex h-28 flex-col items-start justify-between rounded-2xl p-4 text-left text-white shadow-sm transition active:scale-95 ${
-                    CATEGORY_STYLES[item.category] || FALLBACK_STYLE
-                  }`}
-                >
-                  <span className="line-clamp-2 text-sm font-extrabold leading-tight">{item.name}</span>
-                  <span className="text-base font-bold">{formatCurrency(item.price)}</span>
-                </button>
-              ))}
+              {categoryItems.map((item) => {
+                const hasSizes = item.sizes && item.sizes.length > 0;
+                if (!hasSizes) {
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => addToTicket(item)}
+                      className={`flex h-28 flex-col items-start justify-between rounded-2xl p-4 text-left text-white shadow-sm transition active:scale-95 ${
+                        CATEGORY_STYLES[item.category] || FALLBACK_STYLE
+                      }`}
+                    >
+                      <span className="line-clamp-2 text-sm font-extrabold leading-tight">{item.name}</span>
+                      <span className="text-base font-bold">{formatItemPrice(item)}</span>
+                    </button>
+                  );
+                }
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex h-28 flex-col justify-between rounded-2xl p-3 text-white shadow-sm ${
+                      CATEGORY_STYLES[item.category] || FALLBACK_STYLE
+                    }`}
+                  >
+                    <span className="line-clamp-2 text-xs font-extrabold leading-tight">{item.name}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.sizes.map((size) => (
+                        <button
+                          key={size.label}
+                          onClick={() =>
+                            addToTicket({ id: `${item.id}::${size.label}`, name: `${item.name} (${size.label})`, price: size.price })
+                          }
+                          className="rounded-lg bg-black/20 px-2 py-1 text-[11px] font-bold transition hover:bg-black/30 active:scale-95"
+                        >
+                          {size.label} {formatCurrency(size.price)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

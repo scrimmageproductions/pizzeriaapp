@@ -50,15 +50,16 @@ export default function AddSupplierModal({ open, onClose, onSave, ingredients })
                   </option>
                 ))}
               </Select>
-              <TextInput
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="$/unit"
-                value={row.costPerUnit}
-                onChange={(e) => updateRow(i, { costPerUnit: e.target.value })}
-                className="w-24"
-              />
+              <div className="w-24 shrink-0">
+                <TextInput
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="$/unit"
+                  value={row.costPerUnit}
+                  onChange={(e) => updateRow(i, { costPerUnit: e.target.value })}
+                />
+              </div>
               <button type="button" onClick={() => removeRow(i)} className="text-gray-300 hover:text-red-500">
                 <Trash2 size={16} />
               </button>

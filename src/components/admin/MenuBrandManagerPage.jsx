@@ -3,7 +3,7 @@ import { Clock, Palette, Pencil, Plus, ShoppingBag, Timer, Trash2, Type } from "
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { COLOR_SWATCHES, FONT_OPTIONS } from "../../data/brand";
-import { formatCurrency } from "../../utils/helpers";
+import { formatItemPrice } from "../../utils/helpers";
 import Card from "../shared/Card";
 import Button from "../shared/Button";
 import Modal from "../shared/Modal";
@@ -149,7 +149,7 @@ export default function MenuBrandManagerPage() {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-bold text-gray-900">{item.name}</p>
                           <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{item.description}</p>
-                          <p className="mt-1.5 text-sm font-bold text-[#E31837]">{formatCurrency(item.price)}</p>
+                          <p className="mt-1.5 text-sm font-bold text-[#E31837]">{formatItemPrice(item)}</p>
                         </div>
                         <div className="flex shrink-0 gap-1">
                           <button

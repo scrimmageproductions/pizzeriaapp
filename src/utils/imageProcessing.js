@@ -77,3 +77,54 @@ function computeDominantColor(pixels) {
 function rgbToHex(r, g, b) {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
+
+/**
+ * Prepares a photographed menu for Tesseract: draws it to a canvas, downscales it to a sane
+ * OCR resolution, then converts every pixel to high-contrast grayscale. Tesseract's stock
+ * recognizer struggles with colored menu backgrounds and photo noise — flattening to grayscale
+ * and pushing the contrast up gives it a much cleaner black-text-on-white-ish image to read.
+ */
+export function preprocessImageForOCR(file, maxDimension = 1800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not decode image"));
+      img.onload = () => {
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+
+        const CONTRAST = 1.4; // >1 pushes mid-grays toward black/white so text edges stay crisp
+        const intercept = 128 * (1 - CONTRAST);
+
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+          const contrasted = clamp255(gray * CONTRAST + intercept);
+          data[i] = contrasted;
+          data[i + 1] = contrasted;
+          data[i + 2] = contrasted;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function clamp255(value) {
+  return Math.max(0, Math.min(255, value));
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bike, CreditCard, ShoppingBag } from "lucide-react";
+import { Bike, CreditCard, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { formatCurrency } from "../../utils/helpers";
 import Modal from "../shared/Modal";
 import Button from "../shared/Button";
@@ -18,6 +18,7 @@ export default function CheckoutModal({
   cart,
   onRedeem,
   activeCustomer,
+  tableNumber,
 }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -46,7 +47,7 @@ export default function CheckoutModal({
     firstName.trim() &&
     lastName.trim() &&
     phone.trim().length >= 7 &&
-    (fulfillment === "pickup" || address.trim()) &&
+    (tableNumber || fulfillment === "pickup" || address.trim()) &&
     cardNumber.replace(/\s/g, "").length >= 12 &&
     cardExpiry.trim() &&
     cardCvc.trim().length >= 3;
@@ -58,8 +59,8 @@ export default function CheckoutModal({
       customerName: `${firstName.trim()} ${lastName.trim()}`.trim(),
       email: "",
       phone: phone.trim(),
-      fulfillment,
-      address: fulfillment === "delivery" ? address.trim() : null,
+      fulfillment: tableNumber ? "dine-in" : fulfillment,
+      address: tableNumber ? null : fulfillment === "delivery" ? address.trim() : null,
     });
   };
 
@@ -88,35 +89,46 @@ export default function CheckoutModal({
           <TextInput type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
         </FormField>
 
-        <FormField label="Order Type">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setFulfillment("pickup")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
-                fulfillment === "pickup" ? "text-white" : "border-gray-200 text-gray-500"
-              }`}
-              style={fulfillment === "pickup" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
-            >
-              <ShoppingBag size={15} /> Pickup
-            </button>
-            <button
-              type="button"
-              onClick={() => setFulfillment("delivery")}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
-                fulfillment === "delivery" ? "text-white" : "border-gray-200 text-gray-500"
-              }`}
-              style={fulfillment === "delivery" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
-            >
-              <Bike size={15} /> Delivery
-            </button>
+        {tableNumber ? (
+          <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-4 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+              <UtensilsCrossed size={16} />
+            </span>
+            <p className="text-sm font-bold text-gray-800">Dine-In · Table {tableNumber}</p>
           </div>
-        </FormField>
+        ) : (
+          <>
+            <FormField label="Order Type">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFulfillment("pickup")}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
+                    fulfillment === "pickup" ? "text-white" : "border-gray-200 text-gray-500"
+                  }`}
+                  style={fulfillment === "pickup" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
+                >
+                  <ShoppingBag size={15} /> Pickup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFulfillment("delivery")}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border-2 py-2.5 text-sm font-bold transition ${
+                    fulfillment === "delivery" ? "text-white" : "border-gray-200 text-gray-500"
+                  }`}
+                  style={fulfillment === "delivery" ? { backgroundColor: primaryColor, borderColor: primaryColor } : undefined}
+                >
+                  <Bike size={15} /> Delivery
+                </button>
+              </div>
+            </FormField>
 
-        {fulfillment === "delivery" && (
-          <FormField label="Delivery Address">
-            <TextInput value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Apt 4B" />
-          </FormField>
+            {fulfillment === "delivery" && (
+              <FormField label="Delivery Address">
+                <TextInput value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Apt 4B" />
+              </FormField>
+            )}
+          </>
         )}
 
         {matchedCustomer && (

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Clock, Palette, Pencil, Plus, ShoppingBag, Timer, Trash2, Type } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { Clock, Palette, Pencil, Plus, Printer, QrCode, ShoppingBag, Trash2, Type, UtensilsCrossed } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { COLOR_SWATCHES, FONT_OPTIONS } from "../../data/brand";
@@ -18,6 +19,16 @@ export default function MenuBrandManagerPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [tableDraft, setTableDraft] = useState(String(shop.tableCount || ""));
+  const [showQrGrid, setShowQrGrid] = useState(shop.tableCount > 0);
+
+  const generateTables = (e) => {
+    e.preventDefault();
+    const n = Math.max(1, Math.min(200, Number(tableDraft) || 0));
+    if (!n) return;
+    updateShop({ tableCount: n });
+    setShowQrGrid(true);
+  };
 
   const openAdd = () => {
     setEditingItem(null);
@@ -116,6 +127,38 @@ export default function MenuBrandManagerPage() {
             description="Customers see a friendly notice on your site while paused."
           />
         </div>
+      </Card>
+
+      <Card
+        title="QR Table Generator"
+        description="Print a QR code per table — scanning one skips straight to a Dine-In order, no delivery/pickup prompt."
+        icon={UtensilsCrossed}
+      >
+        <form onSubmit={generateTables} className="flex items-end gap-3">
+          <FormField label="Number of tables" className="flex-1 max-w-[180px]">
+            <TextInput type="number" min={1} max={200} value={tableDraft} onChange={(e) => setTableDraft(e.target.value)} placeholder="e.g. 10" />
+          </FormField>
+          <Button type="submit" icon={QrCode}>
+            Generate
+          </Button>
+          {shop.tableCount > 0 && (
+            <Button type="button" variant="outline" icon={Printer} onClick={() => window.print()}>
+              Print
+            </Button>
+          )}
+        </form>
+
+        {shop.tableCount > 0 && showQrGrid && (
+          <div id="qr-table-grid" className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {Array.from({ length: shop.tableCount }, (_, i) => i + 1).map((n) => (
+              <div key={n} className="flex flex-col items-center gap-2 rounded-xl border border-gray-200 p-4 text-center">
+                <QRCodeSVG value={`${window.location.origin}/${shop.slug}?table=${n}`} size={120} />
+                <p className="text-sm font-extrabold text-gray-900">Table {n}</p>
+                <p className="text-[10px] text-gray-400">Scan to order</p>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card

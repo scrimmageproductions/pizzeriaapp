@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createWorker } from "tesseract.js";
+import { createWorker, PSM } from "tesseract.js";
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { formatItemPrice } from "../../utils/helpers";
 import { preprocessImageForOCR } from "../../utils/imageProcessing";
@@ -40,6 +40,10 @@ export default function StepMenuScan({ primaryColor, onImport, onNext }) {
           if (m.status === "recognizing text") setProgress(m.progress);
         },
       });
+      // Sparse text mode — Tesseract's default page-segmentation assumes one uniform block of
+      // prose and blindly reads across multi-column menu layouts as if they were a single
+      // sentence. SPARSE_TEXT instead finds text fragments wherever they sit on the page.
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
       const {
         data: { text },
       } = await worker.recognize(dataUrl);

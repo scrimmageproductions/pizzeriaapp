@@ -1,4 +1,4 @@
-import { Bike, Camera, CheckCircle2, Clock, MapPin, ShoppingBag, User } from "lucide-react";
+import { Bike, Camera, CheckCircle2, Clock, MapPin, ShoppingBag, User, UtensilsCrossed } from "lucide-react";
 import { useShopActions } from "../../context/ShopContext";
 import Button from "../shared/Button";
 import ProgressRing from "../shared/ProgressRing";
@@ -35,8 +35,8 @@ export default function OrderCard({ order, now, accentColor }) {
           </p>
         </div>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          {order.fulfillment === "delivery" ? <Bike size={13} /> : <ShoppingBag size={13} />}
-          {order.fulfillment === "delivery" ? "Delivery" : "Pickup"}
+          {order.fulfillment === "delivery" ? <Bike size={13} /> : order.fulfillment === "dine-in" ? <UtensilsCrossed size={13} /> : <ShoppingBag size={13} />}
+          {order.fulfillment === "delivery" ? "Delivery" : order.fulfillment === "dine-in" ? "Dine-In" : "Pickup"}
         </span>
       </div>
 
@@ -57,11 +57,14 @@ export default function OrderCard({ order, now, accentColor }) {
             </p>
           ) : (
             order.items.map((it) => (
-              <div key={it.itemId} className="flex justify-between text-xs text-gray-600">
-                <span className="truncate">
-                  {it.qty}× {it.name}
-                </span>
-                <span className="shrink-0 font-medium text-gray-800">{formatCurrency(it.qty * it.price)}</span>
+              <div key={it.itemId} className="text-xs text-gray-600">
+                <div className="flex justify-between">
+                  <span className="truncate">
+                    {it.qty}× {it.name}
+                  </span>
+                  <span className="shrink-0 font-medium text-gray-800">{formatCurrency(it.qty * it.price)}</span>
+                </div>
+                {it.modifiers && <p className="whitespace-pre-line pl-3 text-[11px] font-semibold text-gray-500">{it.modifiers}</p>}
               </div>
             ))
           )}
@@ -74,7 +77,7 @@ export default function OrderCard({ order, now, accentColor }) {
 
       {order.address && (
         <p className="mt-3 flex items-center gap-1 text-xs text-gray-500">
-          <MapPin size={12} /> {order.address}
+          {order.fulfillment === "dine-in" ? <UtensilsCrossed size={12} /> : <MapPin size={12} />} {order.address}
         </p>
       )}
 
@@ -86,7 +89,7 @@ export default function OrderCard({ order, now, accentColor }) {
         <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
       </div>
 
-      {stageIndex === 2 && !order.completedAt && order.fulfillment === "pickup" && (
+      {stageIndex === 2 && !order.completedAt && order.fulfillment !== "delivery" && (
         <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={() => completeOrder(order.id)}>
           Complete Order
         </Button>

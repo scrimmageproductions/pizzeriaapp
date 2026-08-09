@@ -25,6 +25,9 @@ const DEFAULT_STATE = {
   drivers: [],
   applicants: [],
   shiftReports: [],
+  zReports: [],
+  merchantCart: [],
+  supplyOrderHistory: [],
 };
 
 function init() {
@@ -53,6 +56,9 @@ function reducer(state, action) {
         recoveredSales: DEFAULT_RECOVERED_SALES,
         integrations: DEFAULT_INTEGRATIONS,
         conversionMetrics: DEFAULT_CONVERSION_METRICS,
+        address: "412 Willow Ave, Brooklyn, NY 11201", // mock shop mailing address — used by the Merchant Supply Store checkout
+        tableCount: 0, // QR Dine-In table generator
+        lastZReportAt: null, // EOD register period start — null means "since midnight today"
         lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
         lng: -73.9442,
         createdAt: Date.now(),
@@ -180,6 +186,52 @@ function reducer(state, action) {
         drivers: state.drivers.map((d) => (d.id === driver.id ? { ...d, status: "OFF_CLOCK", clockInAt: null, inStoreSince: null } : d)),
         shiftReports: [report, ...state.shiftReports],
       };
+    }
+
+    case "RUN_Z_REPORT": {
+      const report = { ...action.payload.summary, id: uid("zreport"), closedAt: Date.now() };
+      return {
+        ...state,
+        zReports: [report, ...state.zReports],
+        shop: state.shop ? { ...state.shop, lastZReportAt: report.closedAt } : state.shop,
+      };
+    }
+
+    case "ADD_TO_MERCHANT_CART": {
+      const addQty = action.payload.qty || 1;
+      const existing = state.merchantCart.find((c) => c.productId === action.payload.productId);
+      if (existing) {
+        return {
+          ...state,
+          merchantCart: state.merchantCart.map((c) =>
+            c.productId === action.payload.productId ? { ...c, qty: c.qty + addQty } : c
+          ),
+        };
+      }
+      return { ...state, merchantCart: [...state.merchantCart, { ...action.payload, qty: addQty }] };
+    }
+
+    case "UPDATE_MERCHANT_CART_QTY":
+      return {
+        ...state,
+        merchantCart:
+          action.payload.qty <= 0
+            ? state.merchantCart.filter((c) => c.productId !== action.payload.productId)
+            : state.merchantCart.map((c) => (c.productId === action.payload.productId ? { ...c, qty: action.payload.qty } : c)),
+      };
+
+    case "REMOVE_FROM_MERCHANT_CART":
+      return { ...state, merchantCart: state.merchantCart.filter((c) => c.productId !== action.payload.productId) };
+
+    case "CHECKOUT_MERCHANT_CART": {
+      if (state.merchantCart.length === 0) return state;
+      const order = {
+        id: uid("supply"),
+        items: state.merchantCart,
+        total: action.payload.total,
+        placedAt: Date.now(),
+      };
+      return { ...state, merchantCart: [], supplyOrderHistory: [order, ...state.supplyOrderHistory] };
     }
 
     case "ADD_SUPPLIER":
@@ -439,6 +491,13 @@ export function ShopProvider({ children }) {
 
       setDriverStatus: (driverId, status, extra = {}) => dispatch({ type: "SET_DRIVER_STATUS", payload: { driverId, status, extra } }),
       clockOutDriver: (driverId, summary) => dispatch({ type: "CLOCK_OUT_DRIVER", payload: { driverId, summary } }),
+
+      runZReport: (summary) => dispatch({ type: "RUN_Z_REPORT", payload: { summary } }),
+
+      addToMerchantCart: (product) => dispatch({ type: "ADD_TO_MERCHANT_CART", payload: product }),
+      updateMerchantCartQty: (productId, qty) => dispatch({ type: "UPDATE_MERCHANT_CART_QTY", payload: { productId, qty } }),
+      removeFromMerchantCart: (productId) => dispatch({ type: "REMOVE_FROM_MERCHANT_CART", payload: { productId } }),
+      checkoutMerchantCart: (total) => dispatch({ type: "CHECKOUT_MERCHANT_CART", payload: { total } }),
     }),
     []
   );

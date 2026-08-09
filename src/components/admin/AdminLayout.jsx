@@ -14,6 +14,8 @@ import {
   Pizza,
   Plug,
   Printer,
+  Receipt,
+  ShoppingBag,
   Store,
   Tablet,
   Terminal,
@@ -30,6 +32,7 @@ const NAV_ITEMS = [
   { to: "/admin/dispatch-terminal", label: "Dispatch Terminal", icon: Terminal },
   { to: "/admin/team", label: "🚗 Team & Drivers", icon: Car },
   { to: "/admin/reports", label: "📊 Shift Reports", icon: FileText },
+  { to: "/admin/eod", label: "🧾 End of Day", icon: Receipt },
   { to: "/admin/inventory", label: "📦 AI Inventory", icon: Package },
   { to: "/admin/menu", label: "Menu & Brand", icon: Palette },
   { to: "/admin/crm", label: "Customer CRM", icon: Users },
@@ -37,6 +40,7 @@ const NAV_ITEMS = [
   { to: "/admin/integrations", label: "Delivery Apps", icon: Plug },
   { to: "/admin/printers", label: "🖨️ Hardware & Printers", icon: Printer },
   { to: "/admin/billing", label: "💳 Billing & Domains", icon: CreditCard },
+  { to: "/admin/supply-store", label: "🛍️ Hardware & Supplies", icon: ShoppingBag },
 ];
 
 export default function AdminLayout({ children }) {

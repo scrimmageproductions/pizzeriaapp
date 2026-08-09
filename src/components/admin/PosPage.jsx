@@ -5,6 +5,7 @@ import { useShopActions, useShopState } from "../../context/ShopContext";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, formatItemPrice, jitterLatLng } from "../../utils/helpers";
 import { TextInput } from "../shared/FormField";
+import PizzaModifierModal from "../shared/PizzaModifierModal";
 import PosPaymentModal from "./PosPaymentModal";
 import PaperTicketModal from "./PaperTicketModal";
 
@@ -33,15 +34,16 @@ export default function PosPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paperTicket, setPaperTicket] = useState(null); // { imageUrl, total } | null
   const [scanOpen, setScanOpen] = useState(false);
+  const [modifierItem, setModifierItem] = useState(null);
 
   if (!shop) return <Navigate to="/onboarding" replace />;
 
   const addToTicket = (item) => {
     if (paperTicket) return; // photographed ticket already carries its own total — no digital items to add
     setTicket((prev) => {
-      const existing = prev.find((t) => t.id === item.id);
+      const existing = item.modifiers ? null : prev.find((t) => t.id === item.id);
       if (existing) return prev.map((t) => (t.id === item.id ? { ...t, qty: t.qty + 1 } : t));
-      return [...prev, { id: item.id, name: item.name, price: item.price, qty: 1 }];
+      return [...prev, { id: item.id, name: item.name, price: item.price, qty: 1, modifiers: item.modifiers || null }];
     });
   };
   const updateQty = (id, qty) =>
@@ -76,7 +78,7 @@ export default function PosPage() {
       customerPhone: orderType === "phone" ? customerPhone.trim() : "",
       fulfillment: orderFulfillment,
       address: orderFulfillment === "delivery" ? address.trim() : null,
-      items: paperTicket ? [] : ticket.map((t) => ({ itemId: t.id, name: t.name, qty: t.qty, price: t.price })),
+      items: paperTicket ? [] : ticket.map((t) => ({ itemId: t.id, name: t.name, qty: t.qty, price: t.price, modifiers: t.modifiers || null })),
       ticketImageUrl: paperTicket?.imageUrl || null,
       total,
       createdAt: Date.now(),
@@ -170,6 +172,21 @@ export default function PosPage() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {categoryItems.map((item) => {
                 const hasSizes = item.sizes && item.sizes.length > 0;
+                const isCustomizablePizza = item.category === "Pizzas" && hasSizes;
+                if (isCustomizablePizza) {
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setModifierItem(item)}
+                      className={`flex h-28 flex-col items-start justify-between rounded-2xl p-4 text-left text-white shadow-sm transition active:scale-95 ${
+                        CATEGORY_STYLES[item.category] || FALLBACK_STYLE
+                      }`}
+                    >
+                      <span className="line-clamp-2 text-sm font-extrabold leading-tight">{item.name}</span>
+                      <span className="text-base font-bold">{formatItemPrice(item)} · Customize</span>
+                    </button>
+                  );
+                }
                 if (!hasSizes) {
                   return (
                     <button
@@ -299,6 +316,7 @@ export default function PosPage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-gray-900">{t.name}</p>
                       <p className="text-xs text-gray-400">{formatCurrency(t.price)} each</p>
+                      {t.modifiers && <p className="whitespace-pre-line text-[11px] text-gray-500">{t.modifiers}</p>}
                     </div>
                     <button
                       onClick={() => updateQty(t.id, t.qty - 1)}
@@ -371,6 +389,14 @@ export default function PosPage() {
       />
 
       <PaperTicketModal open={scanOpen} onClose={() => setScanOpen(false)} onCreate={handlePaperTicket} primaryColor={shop.primaryColor} />
+
+      <PizzaModifierModal
+        open={!!modifierItem}
+        item={modifierItem}
+        primaryColor={shop.primaryColor}
+        onClose={() => setModifierItem(null)}
+        onAdd={addToTicket}
+      />
     </div>
   );
 }

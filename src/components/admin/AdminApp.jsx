@@ -13,6 +13,9 @@ import BillingPage from "./BillingPage";
 import IntegrationsPage from "./IntegrationsPage";
 import TeamDriversPage from "./TeamDriversPage";
 import ShiftReportsPage from "./ShiftReportsPage";
+import EODPage from "./EODPage";
+import SupplyStorePage from "./SupplyStorePage";
+import CustomBrandStudioPage from "./CustomBrandStudioPage";
 
 export default function AdminApp() {
   const { shop } = useShopState();
@@ -35,6 +38,9 @@ export default function AdminApp() {
         <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="team" element={<TeamDriversPage />} />
         <Route path="reports" element={<ShiftReportsPage />} />
+        <Route path="eod" element={<EODPage />} />
+        <Route path="supply-store" element={<SupplyStorePage />} />
+        <Route path="supply-store/custom" element={<CustomBrandStudioPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

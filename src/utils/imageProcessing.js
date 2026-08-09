@@ -79,10 +79,12 @@ function rgbToHex(r, g, b) {
 }
 
 /**
- * Prepares a photographed menu for Tesseract: draws it to a canvas, downscales it to a sane
- * OCR resolution, then converts every pixel to high-contrast grayscale. Tesseract's stock
- * recognizer struggles with colored menu backgrounds and photo noise — flattening to grayscale
- * and pushing the contrast up gives it a much cleaner black-text-on-white-ish image to read.
+ * Prepares a photographed menu for Tesseract: draws it to a canvas, downscales it to a sane OCR
+ * resolution, then BINARIZES every pixel to pure black or pure white. A grayscale/contrast blend
+ * still leaves midtones that Tesseract misreads on colored menu backgrounds (bright yellow, red,
+ * blue) — a hard threshold gives it unambiguous text edges instead. The threshold is set relative
+ * to the photo's own average luminance (not a fixed constant) so it adapts to both dim and
+ * brightly-lit photos rather than only working on one lighting condition.
  */
 export function preprocessImageForOCR(file, maxDimension = 1800) {
   return new Promise((resolve, reject) => {
@@ -104,16 +106,25 @@ export function preprocessImageForOCR(file, maxDimension = 1800) {
 
         const imageData = ctx.getImageData(0, 0, w, h);
         const data = imageData.data;
+        const pixelCount = data.length / 4;
 
-        const CONTRAST = 1.4; // >1 pushes mid-grays toward black/white so text edges stay crisp
-        const intercept = 128 * (1 - CONTRAST);
+        const luminances = new Float32Array(pixelCount);
+        let sum = 0;
+        for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+          const luminance = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+          luminances[p] = luminance;
+          sum += luminance;
+        }
 
-        for (let i = 0; i < data.length; i += 4) {
-          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-          const contrasted = clamp255(gray * CONTRAST + intercept);
-          data[i] = contrasted;
-          data[i + 1] = contrasted;
-          data[i + 2] = contrasted;
+        // Bias below the mean: menu backgrounds are usually the majority pixel and lighter than
+        // the printed text, so leaning the cutoff down keeps background tones landing white.
+        const threshold = (sum / pixelCount) * 0.82;
+
+        for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+          const bw = luminances[p] < threshold ? 0 : 255;
+          data[i] = bw;
+          data[i + 1] = bw;
+          data[i + 2] = bw;
         }
 
         ctx.putImageData(imageData, 0, 0);
@@ -123,8 +134,4 @@ export function preprocessImageForOCR(file, maxDimension = 1800) {
     };
     reader.readAsDataURL(file);
   });
-}
-
-function clamp255(value) {
-  return Math.max(0, Math.min(255, value));
 }

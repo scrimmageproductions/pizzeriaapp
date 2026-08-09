@@ -40,6 +40,7 @@ export default function CartDrawer({ open, onClose, cart, onUpdateQty, onRemove,
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-gray-900">{item.name}</p>
                     <p className="text-xs text-gray-500">{item.isReward ? "Redeemed with points" : `${formatCurrency(item.price)} each`}</p>
+                    {item.modifiers && <p className="whitespace-pre-line text-[11px] text-gray-400">{item.modifiers}</p>}
                   </div>
                   {item.isReward ? (
                     <span className="rounded-full bg-[#00A651]/10 px-2.5 py-1 text-xs font-bold text-[#00A651]">FREE</span>

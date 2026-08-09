@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { CupSoda, IceCreamCone, Plus, Salad, ShoppingBag } from "lucide-react";
 import { CATEGORIES } from "../../data/menuScan";
 import { formatCurrency, formatItemPrice } from "../../utils/helpers";
+import PizzaModifierModal from "../shared/PizzaModifierModal";
 
 const CATEGORY_ICONS = {
   Pizzas: ShoppingBag,
@@ -10,8 +12,16 @@ const CATEGORY_ICONS = {
 };
 
 export default function MenuList({ items, primaryColor, onAddToCart, disabled = false }) {
+  const [modifierItem, setModifierItem] = useState(null);
+
   const addSize = (item, size) => {
     onAddToCart({ id: `${item.id}::${size.label}`, name: `${item.name} (${size.label})`, price: size.price });
+  };
+
+  const handleItemClick = (item) => {
+    if (item.category === "Pizzas" && item.sizes && item.sizes.length > 0) {
+      setModifierItem(item);
+    }
   };
 
   return (
@@ -29,6 +39,7 @@ export default function MenuList({ items, primaryColor, onAddToCart, disabled = 
             <div className="grid gap-3 sm:grid-cols-2">
               {catItems.map((item) => {
                 const hasSizes = item.sizes && item.sizes.length > 0;
+                const isCustomizablePizza = item.category === "Pizzas" && hasSizes;
                 return (
                   <div
                     key={item.id}
@@ -39,7 +50,21 @@ export default function MenuList({ items, primaryColor, onAddToCart, disabled = 
                       <p className="mt-1 line-clamp-2 text-xs text-gray-500">{item.description}</p>
                     </div>
 
-                    {!hasSizes ? (
+                    {isCustomizablePizza ? (
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-sm font-extrabold text-gray-900">{formatItemPrice(item)}</span>
+                        <button
+                          onClick={() => handleItemClick(item)}
+                          disabled={disabled}
+                          style={disabled ? undefined : { backgroundColor: primaryColor }}
+                          className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm transition active:scale-95 ${
+                            disabled ? "cursor-not-allowed bg-gray-200 text-gray-400" : "text-white"
+                          }`}
+                        >
+                          <Plus size={13} /> Customize
+                        </button>
+                      </div>
+                    ) : !hasSizes ? (
                       <div className="mt-3 flex items-center justify-between">
                         <span className="text-sm font-extrabold text-gray-900">{formatItemPrice(item)}</span>
                         <button
@@ -80,6 +105,14 @@ export default function MenuList({ items, primaryColor, onAddToCart, disabled = 
           </section>
         );
       })}
+
+      <PizzaModifierModal
+        open={!!modifierItem}
+        item={modifierItem}
+        primaryColor={primaryColor}
+        onClose={() => setModifierItem(null)}
+        onAdd={onAddToCart}
+      />
     </div>
   );
 }

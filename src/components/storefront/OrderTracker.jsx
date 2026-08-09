@@ -125,6 +125,8 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
                 ? dispatched
                   ? `${order.assignedDriver} is on the way!`
                   : "Finding you a driver…"
+                : order.fulfillment === "dine-in"
+                ? "Ready now — coming right to your table!"
                 : "Ready now — come on by!"}
             </div>
           )}
@@ -183,7 +185,12 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
             <span>{formatCurrency(order.total)}</span>
           </div>
           <div className="mt-3 text-xs text-gray-500">
-            {order.fulfillment === "delivery" ? `Delivering to ${order.address}` : "Pickup in-store"} · {order.customerName}
+            {order.fulfillment === "delivery"
+              ? `Delivering to ${order.address}`
+              : order.fulfillment === "dine-in"
+              ? order.address
+              : "Pickup in-store"}{" "}
+            · {order.customerName}
           </div>
         </div>
 

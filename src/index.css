@@ -80,3 +80,20 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Printing the QR Table Generator grid should output just the grid, not the whole dashboard. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #qr-table-grid,
+  #qr-table-grid * {
+    visibility: visible;
+  }
+  #qr-table-grid {
+    position: absolute;
+    inset: 0;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

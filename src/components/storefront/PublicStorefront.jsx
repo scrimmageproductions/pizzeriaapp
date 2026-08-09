@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { PauseCircle, Pizza } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { FONT_OPTIONS } from "../../data/brand";
@@ -13,6 +13,8 @@ import OrderTracker from "./OrderTracker";
 
 export default function PublicStorefront() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const tableNumber = searchParams.get("table");
   const { shop, items, orders, customers, activeCustomerId } = useShopState();
   const { addOrder, upsertCustomer, redeemReward, setActiveCustomer } = useShopActions();
 
@@ -78,15 +80,17 @@ export default function PublicStorefront() {
 
   const placeOrder = ({ customerName, email, phone, fulfillment, address }) => {
     const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const destination = fulfillment === "delivery" ? jitterLatLng(shop.lat, shop.lng) : { lat: null, lng: null };
+    const finalFulfillment = tableNumber ? "dine-in" : fulfillment;
+    const finalAddress = tableNumber ? `Table ${tableNumber}` : address;
+    const destination = finalFulfillment === "delivery" ? jitterLatLng(shop.lat, shop.lng) : { lat: null, lng: null };
     const order = {
       id: orderId,
       customerName,
       customerEmail: email,
       customerPhone: phone,
-      fulfillment,
-      address,
-      items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price })),
+      fulfillment: finalFulfillment,
+      address: finalAddress,
+      items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price, modifiers: c.modifiers || null })),
       total: checkoutTotals.total,
       createdAt: Date.now(),
       prepMinutes: shop.prepMinutes,
@@ -169,6 +173,7 @@ export default function PublicStorefront() {
         cart={cart}
         onRedeem={handleRedeem}
         activeCustomer={activeCustomer}
+        tableNumber={tableNumber}
       />
     </div>
   );

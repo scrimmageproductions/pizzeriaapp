@@ -5,9 +5,9 @@ import { useShopActions, useShopState } from "../../context/ShopContext";
 import { FONT_OPTIONS } from "../../data/brand";
 import { jitterLatLng } from "../../utils/helpers";
 import StorefrontHeader from "./StorefrontHeader";
+import FeaturedReviewsCarousel from "./FeaturedReviewsCarousel";
 import MenuList from "./MenuList";
-import CartDrawer from "./CartDrawer";
-import CheckoutModal from "./CheckoutModal";
+import CheckoutDrawer from "./CheckoutDrawer";
 import SplitBillDrawer from "./SplitBillDrawer";
 import OrderTracker from "./OrderTracker";
 import VipUpsellBanner from "./VipUpsellBanner";
@@ -22,8 +22,6 @@ export default function PublicStorefront() {
 
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [checkoutTotals, setCheckoutTotals] = useState(null);
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [splitOrderId, setSplitOrderId] = useState(null);
   const [splitDrawerOpen, setSplitDrawerOpen] = useState(false);
@@ -65,13 +63,7 @@ export default function PublicStorefront() {
   const removeItem = (id) => setCart((prev) => prev.filter((c) => c.id !== id));
   const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
 
-  const openCheckout = (totals) => {
-    setCheckoutTotals(totals);
-    setCartOpen(false);
-    setCheckoutOpen(true);
-  };
-
-  const placeOrder = ({ customerName, email, phone, fulfillment, address }) => {
+  const placeOrder = ({ customerName, email, phone, fulfillment, address, deliveryInstructions, deliveryFee, totals }) => {
     const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
     const destination = fulfillment === "delivery" ? jitterLatLng(shop.lat, shop.lng) : { lat: null, lng: null };
     const subscriberMatch = customers.find((c) => c.phone === phone.trim() && c.isSubscriber);
@@ -82,9 +74,11 @@ export default function PublicStorefront() {
       customerPhone: phone,
       fulfillment,
       address,
+      deliveryInstructions: deliveryInstructions || "",
+      deliveryFee: deliveryFee || 0,
       ...(isDineIn && { tableNumber }),
       items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price })),
-      total: checkoutTotals.total,
+      total: totals.total,
       createdAt: Date.now(),
       prepMinutes: shop.prepMinutes,
       completedAt: null,
@@ -99,15 +93,15 @@ export default function PublicStorefront() {
       isSubscriberOrder: !!subscriberMatch,
     };
     addOrder(order);
-    upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });
+    upsertCustomer({ name: customerName, email, phone, orderTotal: totals.total });
     setActiveOrderId(orderId);
     setCart([]);
-    setCheckoutOpen(false);
+    setCartOpen(false);
   };
 
   // Split Bill: the order is placed unpaid straight away (kitchen doesn't wait on a card swipe for
   // a dine-in table) so friends at the table each have a real order to pay their portion against.
-  const startSplitBill = ({ customerName, email, phone }) => {
+  const startSplitBill = ({ customerName, email, phone, totals }) => {
     const orderId = `DD-${Math.floor(1000 + Math.random() * 9000)}`;
     const order = {
       id: orderId,
@@ -118,7 +112,7 @@ export default function PublicStorefront() {
       address: null,
       tableNumber,
       items: cart.map((c) => ({ itemId: c.id, name: c.name, qty: c.qty, price: c.price })),
-      total: checkoutTotals.total,
+      total: totals.total,
       createdAt: Date.now(),
       prepMinutes: shop.prepMinutes,
       completedAt: null,
@@ -133,9 +127,9 @@ export default function PublicStorefront() {
       ...(virtualBrand && { brandId: virtualBrand.id, brandName: virtualBrand.name, brandColor: virtualBrand.primaryColor }),
     };
     addOrder(order);
-    if (phone) upsertCustomer({ name: customerName, email, phone, orderTotal: checkoutTotals.total });
+    if (phone) upsertCustomer({ name: customerName, email, phone, orderTotal: totals.total });
     setCart([]);
-    setCheckoutOpen(false);
+    setCartOpen(false);
     setSplitOrderId(orderId);
     setSplitDrawerOpen(true);
   };
@@ -146,6 +140,11 @@ export default function PublicStorefront() {
 
   const fontFamily = FONT_OPTIONS.find((f) => f.id === displayShop.font)?.family;
 
+  // Base kitchen prep time plus a small nudge per order already queued — a rough but genuinely
+  // reactive "expected ready time" instead of a hardcoded number.
+  const activeOrderCount = orders.filter((o) => !o.completedAt).length;
+  const estimatedWaitMinutes = shop.prepMinutes + Math.min(activeOrderCount, 10) * 2;
+
   if (activeOrder) {
     return <OrderTracker order={activeOrder} shop={displayShop} onNewOrder={() => setActiveOrderId(null)} />;
   }
@@ -153,6 +152,8 @@ export default function PublicStorefront() {
   return (
     <div className="min-h-screen bg-[#F8F9FA]" style={{ fontFamily }}>
       <StorefrontHeader shop={displayShop} cartCount={cartCount} onOpenCart={() => setCartOpen(true)} />
+
+      <FeaturedReviewsCarousel reviews={displayShop.featuredReviews} />
 
       {!displayShop.acceptingOrders && (
         <div className="mx-auto mt-4 flex max-w-3xl items-center gap-2 rounded-xl bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-600">
@@ -177,23 +178,18 @@ export default function PublicStorefront() {
         disabled={!displayShop.acceptingOrders}
       />
 
-      <CartDrawer
+      <CheckoutDrawer
         open={cartOpen}
         onClose={() => setCartOpen(false)}
         cart={cart}
+        items={items}
         onUpdateQty={updateQty}
         onRemove={removeItem}
-        primaryColor={displayShop.primaryColor}
-        onCheckout={openCheckout}
-      />
-
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        totals={checkoutTotals || { subtotal: 0, tax: 0, total: 0 }}
+        onAddUpsell={addToCart}
         primaryColor={displayShop.primaryColor}
         isDineIn={isDineIn}
         tableNumber={tableNumber}
+        estimatedWaitMinutes={estimatedWaitMinutes}
         onPlaceOrder={placeOrder}
         onSplitBill={startSplitBill}
       />

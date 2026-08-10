@@ -59,6 +59,9 @@ function reducer(state, action) {
         abandonedCartSmsEnabled: false,
         lat: 40.6782, // mock storefront location (Brooklyn, NY) — center pin for the delivery map
         lng: -73.9442,
+        headerStyle: "minimal", // 'minimal' | 'hero' — storefront header layout
+        heroImageUrl: "",
+        featuredReviews: [], // up to 3 owner-curated reviews shown in a carousel on the storefront
         createdAt: Date.now(),
       };
       const { shiftReports, driverCashouts } = buildSeedPayroll();

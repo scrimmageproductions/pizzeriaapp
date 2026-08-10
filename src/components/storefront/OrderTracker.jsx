@@ -121,6 +121,12 @@ export default function OrderTracker({ order: orderProp, shop, onNewOrder }) {
               </div>
             ))}
           </div>
+          {order.deliveryFee > 0 && (
+            <div className="mt-1.5 flex justify-between border-t border-dashed border-gray-100 pt-1.5 text-sm text-gray-600">
+              <span>Delivery Fee</span>
+              <span className="font-medium text-gray-800">{formatCurrency(order.deliveryFee)}</span>
+            </div>
+          )}
           <div className="mt-3 flex justify-between border-t border-dashed border-gray-100 pt-3 text-sm font-extrabold text-gray-900">
             <span>Total</span>
             <span>{formatCurrency(order.total)}</span>

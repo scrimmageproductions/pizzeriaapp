@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bike, ChevronDown, ChevronUp, MapPin, Navigation, User } from "lucide-react";
+import { Bike, ChevronDown, ChevronUp, MapPin, Navigation, StickyNote, User } from "lucide-react";
 import { useShopActions, useShopState } from "../../context/ShopContext";
 import { useTicker } from "../../utils/useTicker";
 import { formatCurrency, getOrderTiming } from "../../utils/helpers";
@@ -30,6 +30,11 @@ function DeliveryTicket({ order, selected, onSelect, children }) {
       <p className="mt-2 flex items-start gap-1 text-xs text-gray-500 dark:text-white/40">
         <MapPin size={12} className="mt-0.5 shrink-0" /> {order.address}
       </p>
+      {order.deliveryInstructions && (
+        <p className="mt-1 flex items-start gap-1 text-xs italic text-gray-400 dark:text-white/30">
+          <StickyNote size={12} className="mt-0.5 shrink-0" /> {order.deliveryInstructions}
+        </p>
+      )}
       <div className="mt-1.5 space-y-0.5">
         {order.items.map((it) => (
           <p key={it.itemId} className="truncate text-xs text-gray-500 dark:text-white/40">

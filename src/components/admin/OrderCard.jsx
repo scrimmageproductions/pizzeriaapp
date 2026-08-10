@@ -1,5 +1,5 @@
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { Bike, CalendarClock, Check, CheckCircle2, Clock, Crown, MapPin, ShoppingBag, Store, User } from "lucide-react";
+import { CalendarClock, Check, CheckCircle2, Clock, Crown, MapPin, Store, User } from "lucide-react";
 import { useShopActions } from "../../context/ShopContext";
 import { useSound } from "../../utils/useSound";
 import Button from "../shared/Button";
@@ -8,6 +8,13 @@ import { formatClockTime, formatCountdown, formatCurrency, getOrderTiming } from
 
 const SWIPE_THRESHOLD = 150;
 const SWIPE_RANGE = 220; // how far the ticket can be dragged before hitting the constraint's soft edge
+
+// The kitchen needs to know at a glance how this food is leaving the building.
+const FULFILLMENT_TAGS = {
+  pickup: { label: "🥡 Pickup", className: "bg-blue-600 text-white" },
+  delivery: { label: "🚗 Delivery", className: "bg-purple-600 text-white" },
+  "dine-in": { label: "🍽️ Dine-In", className: "bg-[#F39C12] text-white" },
+};
 
 export default function OrderCard({ order, now, accentColor }) {
   const { completeOrder } = useShopActions();
@@ -20,8 +27,8 @@ export default function OrderCard({ order, now, accentColor }) {
   const revealScale = useTransform(x, [0, SWIPE_THRESHOLD], [0.6, 1]);
 
   // Swiping stands in for the "Complete Order" button, so it only applies where that action is
-  // valid — a pickup order the kitchen is done with. Delivery still routes through Dispatch.
-  const canSwipe = order.fulfillment === "pickup" && !order.completedAt;
+  // valid — a pickup or dine-in order the kitchen is done with. Delivery still routes through Dispatch.
+  const canSwipe = order.fulfillment !== "delivery" && !order.completedAt;
 
   const handleComplete = () => {
     playTick();
@@ -80,9 +87,12 @@ export default function OrderCard({ order, now, accentColor }) {
               {order.isSubscriberOrder && <Crown size={12} className="text-[#F5B700]" />}
             </p>
           </div>
-          <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-white/40">
-            {order.fulfillment === "delivery" ? <Bike size={13} /> : <ShoppingBag size={13} />}
-            {order.fulfillment === "delivery" ? "Delivery" : "Pickup"}
+          <span
+            className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide ${
+              (FULFILLMENT_TAGS[order.fulfillment] || FULFILLMENT_TAGS.pickup).className
+            }`}
+          >
+            {(FULFILLMENT_TAGS[order.fulfillment] || FULFILLMENT_TAGS.pickup).label}
           </span>
         </div>
 
@@ -122,7 +132,7 @@ export default function OrderCard({ order, now, accentColor }) {
           <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(order.total)}</span>
         </div>
 
-        {stageIndex === 2 && !order.completedAt && order.fulfillment === "pickup" && (
+        {stageIndex === 2 && !order.completedAt && order.fulfillment !== "delivery" && (
           <>
             <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={handleComplete}>
               Complete Order
